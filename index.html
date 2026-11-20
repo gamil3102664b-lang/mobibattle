@@ -3,8 +3,10 @@
 <head>
 <title>MOBI BATTLE PK</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <style>
-html{scroll-behavior:smooth}
 body{background:#0f0f0f;color:white;font-family:Arial;text-align:center;margin:0;padding-bottom:80px}
 .header{background:#000;padding:12px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #ffcc00;position:sticky;top:0;z-index:99}
 .logo{font-weight:900;font-size:18px;cursor:pointer}.logo span{color:#ffcc00}
@@ -12,25 +14,23 @@ body{background:#0f0f0f;color:white;font-family:Arial;text-align:center;margin:0
 .hero{background:linear-gradient(180deg,#3a0000,#0f0f0f);padding:18px 12px;border-bottom:2px solid #ffcc00}
 .hero h1{font-size:28px;color:#ffcc00;margin:5px}
 .btn{border:none;padding:13px;border-radius:30px;font-weight:900;font-size:15px;width:90%;margin:6px;cursor:pointer}
-.yellow{background:#ffcc00;color:black}.green{background:#25D366;color:white}.blue{background:#0088ff;color:white}.red{background:#ff3333;color:white}.purple{background:#a855f7;color:white}.orange{background:#ff8800;color:white}
+.yellow{background:#ffcc00;color:black}.green{background:#25D366;color:white}.blue{background:#0088ff;color:white}.red{background:#ff3333;color:white}.purple{background:#a855f7;color:white}
 .wallet{background:linear-gradient(135deg,#ffcc00,#ff8800);color:black;margin:12px;padding:18px;border-radius:18px}
 .wallet h2{margin:0;font-size:32px}
 .filterBar{display:flex;gap:6px;overflow-x:auto;padding:10px 12px;white-space:nowrap}
 .fBtn{background:#222;color:white;border:1px solid #444;padding:10px 16px;border-radius:25px;font-weight:900;font-size:13px;cursor:pointer;flex-shrink:0}
-.fBtn.active{background:#ffcc00;color:black;border-color:#ffcc00}
+.fBtn.active{background:#ffcc00;color:black}
 .card{background:#1a1a1a;margin:12px;border-radius:15px;overflow:hidden;border:1px solid #333;text-align:left}
 .card-img{width:100%;height:160px;object-fit:cover;display:block}
 .card-img-wrap{position:relative}
-.catBadge{position:absolute;top:10px;left:10px;background:#ffcc00;color:black;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:900;z-index:2}
-.prizeBadge{position:absolute;top:10px;right:10px;background:#ff3333;color:white;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:900;z-index:2}
+.catBadge{position:absolute;top:10px;left:10px;background:#ffcc00;color:black;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:900}
+.prizeBadge{position:absolute;top:10px;right:10px;background:#ff3333;color:white;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:900}
 .card-body{padding:12px}.card h3{margin:0;color:#ffcc00;font-size:18px}
 .count{color:#00ff88;font-weight:900}
 .tag{background:#ffcc00;color:black;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:900}
 input,select{width:92%;padding:12px;margin:6px;border-radius:10px;border:1px solid #444;background:#222;color:white}
 .box{background:#1a1a1a;margin:12px;padding:14px;border-radius:15px;border:1px solid #333}
-.winner{display:flex;justify-content:space-between;background:#222;padding:10px;margin:6px;border-radius:10px;border-left:4px solid #ffcc00}
 .leader{display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #333}
-.footer{padding:20px;color:#888;font-size:12px}
 #ownerPanel{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#111;z-index:999;overflow:auto;padding:15px;text-align:left}
 .small{font-size:12px;color:#aaa}.hist{font-size:13px;text-align:left;background:#222;padding:8px;margin:5px;border-radius:8px}
 .stat{background:#1a1a1a;border:1px solid #333;padding:10px;border-radius:12px;width:30%}
@@ -40,248 +40,286 @@ input,select{width:92%;padding:12px;margin:6px;border-radius:10px;border:1px sol
 #seatModal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);z-index:1000;overflow:auto;padding:15px}
 .seatGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
 .seat{background:#222;border:2px solid #444;padding:14px 5px;border-radius:12px;cursor:pointer;font-weight:900;font-size:13px}
-.seat small{display:block;font-size:10px;font-weight:400;color:#aaa;margin-top:4px;word-break:break-all}
-.seat.free{border-color:#00ff88}
-.seat.taken{background:#ff3333;border-color:#ff3333;color:white;cursor:not-allowed;opacity:.8}
-.seat.selected{background:#ffcc00;border-color:#ffcc00;color:black;transform:scale(1.05)}
-.seatForm{background:#1a1a1a;padding:14px;border-radius:15px;border:2px solid #ffcc00;margin-top:10px}
-#waPopup{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:2000;padding:20px}
-.waBox{background:#1a1a1a;border:2px solid #25D366;border-radius:18px;padding:18px;max-width:450px;margin:40px auto;text-align:left}
-.waBox pre{background:#000;padding:12px;border-radius:10px;white-space:pre-wrap;font-size:14px;color:#fff}
-.rewardBox{background:linear-gradient(135deg,#1e102e,#3a0000);border:2px solid #ffcc00 !important}
-.roomBox{background:#003300;border:1px solid #00ff88;padding:10px;border-radius:10px;margin-top:8px}
-/* BOTTOM NAV - NAYA */
+.seat.free{border-color:#00ff88}.seat.taken{background:#ff3333;border-color:#ff3333;cursor:not-allowed;opacity:.8}.seat.selected{background:#ffcc00;color:black}
 .bottomNav{position:fixed;bottom:0;left:0;right:0;background:#000;border-top:2px solid #ffcc00;display:flex;justify-content:space-around;padding:8px 0 10px;z-index:500}
 .navBtn{background:none;border:none;color:#888;cursor:pointer;font-size:11px;font-weight:900;display:flex;flex-direction:column;align-items:center;gap:2px;flex:1}
-.navBtn span{font-size:22px}
-.navBtn.active{color:#ffcc00}
-.page{display:none}
-.page.active{display:block}
-.pendingCard{background:#222;padding:12px;margin:8px;border-radius:12px;text-align:left;border-left:4px solid #ff8800}
-.pendingCard.approved{border-left-color:#00ff88}
-.pendingCard.rejected{border-left-color:#ff3333}
-.myMatchCard{background:#1e102e;border:1px solid #a855f7;padding:12px;margin:8px;border-radius:12px;text-align:left}
+.navBtn.active{color:#ffcc00}.navBtn span{font-size:20px}
+.page{display:none}.page.active{display:block}
+.uidBox{background:#000;border:1px dashed #ffcc00;padding:8px;border-radius:8px;font-size:11px;word-break:break-all;margin-top:6px}
+.searchBox{background:#000;border:2px solid #ffcc00;padding:12px;border-radius:12px}
 </style>
 </head>
 <body>
-<div class="header"><div class="logo" onclick="tapFooter()">MOBI <span>BATTLE PK</span></div><div class="live">● LIVE</div></div>
+<div class="header"><div class="logo" onclick="ownerClick()">MOBI <span>BATTLE PK</span></div><div class="live">● LIVE</div></div>
 
-<!-- PAGE 1 - MATCHES -->
-<div id="page-matches" class="page active">
-<div class="hero"><h1>FREE FIRE<br>TOURNAMENT PK</h1><p>Daily Solo • Duo • Squad • CS • Lone Wolf</p><button class="btn yellow" onclick="document.getElementById('tour').scrollIntoView({behavior:'smooth'})">🔥 JOIN NOW - Neeche Matches Dekho</button><button class="btn green" onclick="openWA()">WhatsApp - 03218427826</button><div class="stats"><div class="stat"><b>5,200+</b><br>Players</div><div class="stat"><b>Rs. 8.5L+</b><br>Prize</div><div class="stat"><b>30 Min</b><br>Payment</div></div></div>
-<div id="tour" style="padding-top:10px"><h2>🔴 LIVE TOURNAMENTS</h2><p class="small">Category Dabao - Sirf Wahi Matches Aayenge!</p></div>
-<div class="filterBar"><button class="fBtn active" id="btn-all" onclick="setFilter('all')">🔥 ALL</button><button class="fBtn" id="btn-brkill" onclick="setFilter('brkill')">🎯 BR PER KILL</button><button class="fBtn" id="btn-survival" onclick="setFilter('survival')">🏆 SURVIVAL</button><button class="fBtn" id="btn-cs" onclick="setFilter('cs')">💣 CS CUSTOM</button><button class="fBtn" id="btn-lonewolf" onclick="setFilter('lonewolf')">👤 LONE WOLF</button></div>
-<p id="filterInfo" style="color:#ffcc00;font-weight:900;margin:0">Sab Matches</p><div id="tList"></div>
+<div id="page-home" class="page active">
+<div class="hero"><h1>MOBI BATTLE PK 🔥</h1><p>Free Fire Tournament - Khelo Aur Jeeto!</p><button class="btn yellow" onclick="showPage('page-matches')">🎮 MATCHES DEKHO</button></div>
+<div class="wallet"><div>💰 MERA WALLET</div><h2 id="walletBal">0 Coins</h2><div class="small" id="userInfo">Login karo</div><div id="myUidBox"></div><button class="btn green" onclick="showPage('page-wallet')">➕ ADD MONEY / WITHDRAW</button></div>
+<div class="stats"><div class="stat"><b id="totalMatches">0</b><br>Matches</div><div class="stat"><b id="totalPlayers">0</b><br>Players</div><div class="stat"><b id="myGames">0</b><br>Meri Games</div></div>
+<div class="box"><h3>🏆 TOP PLAYERS</h3><div id="winnerList"></div></div>
 </div>
 
-<!-- PAGE 2 - WALLET -->
-<div id="page-wallet" class="page">
-<h2>💰 MY WALLET</h2>
-<div class="wallet"><div style="display:flex;justify-content:space-between"><span>💰 MY WALLET</span><span id="wName">Guest</span></div><h2 id="bal">Rs. 0</h2><p style="margin:0">Winnings: <b id="totalWin">Rs. 0</b> | Played: <b id="totalPlay">0</b></p><p id="coinMsg" style="color:#006400;font-weight:900;margin:6px 0 0;display:none"></p><div style="display:flex;gap:6px;margin-top:12px"><button class="btn green" style="width:48%" onclick="showAdd()">➕ Add Money</button><button class="btn blue" style="width:48%" onclick="showWithdraw()">💸 Withdraw</button></div></div>
-<div class="box" id="addBox" style="display:none"><h3>➕ Wallet Me Paisa Add Karo - DEPOSIT</h3><p class="small">Step 1: JazzCash <b>03218427826</b> pe bhejo<br>Step 2: Neeche amount + Trx likho</p><input id="addAmt" type="number" placeholder="Kitne bheje? - 500"><input id="addTrx" placeholder="Trx ID / Sender Number"><button class="btn green" onclick="addMoneyReq()">✅ Deposit Request Bhejo</button></div>
-<div class="box" id="withBox" style="display:none"><h3>💸 Withdraw Karo</h3><p class="small">Min Rs.100 | 30 Min me payment</p><input id="withAmt" type="number" placeholder="Kitne nikalne? - 1000"><select id="withMethod"><option>JazzCash</option><option>Easypaisa</option></select><input id="withNum" placeholder="Apna JazzCash Number - 03XX"><button class="btn blue" onclick="withdrawReq()">💸 Withdraw Request Bhejo</button></div>
-<div class="box"><h3>📜 Wallet History - Sab Lेन Den</h3><div id="histList"><p class="small">Abhi koi history nahi</p></div></div>
+<div id="page-matches" class="page"><h2>🎮 MATCHES</h2><div class="filterBar"><button class="fBtn active" onclick="setFilter('ALL',this)">ALL</button><button class="fBtn" onclick="setFilter('SOLO',this)">SOLO</button><button class="fBtn" onclick="setFilter('DUO',this)">DUO</button><button class="fBtn" onclick="setFilter('SQUAD',this)">SQUAD</button></div><div id="matchList"></div></div>
+
+<div id="page-wallet" class="page"><h2>💰 WALLET</h2><div class="wallet"><h2 id="walletBal2">0 Coins</h2><div class="small">1 Coin = 1 Rs</div></div>
+<div class="box"><h3>➕ ADD MONEY</h3><input id="addAmount" type="number" placeholder="Amount - Masalan 100"><input id="addTrx" placeholder="JazzCash Trx ID"><button class="btn green" onclick="requestDeposit()">✅ REQUEST BHEJO</button><p class="small">JazzCash: 03218427826</p></div>
+<div class="box"><h3>💸 WITHDRAW</h3><input id="wdAmount" type="number" placeholder="Kitne Coins?"><input id="wdNumber" placeholder="JazzCash Number"><button class="btn yellow" onclick="requestWithdraw()">💸 WITHDRAW KARO</button><p class="small">Approve hone pe Coins katenge.</p></div>
+<div class="box"><h3>📜 HISTORY</h3><div id="historyList"></div></div></div>
+
+<div id="page-my" class="page"><h2>📱 MY PROFILE - LOGIN SYSTEM</h2>
+<div class="box" id="loginBox">
+<h3>🔐 LOGIN / SIGNUP</h3>
+<input id="pName" placeholder="Apna Naam - Signup ke liye">
+<input id="pPhone" placeholder="WhatsApp Number - 03xx">
+<input id="pEmail" placeholder="Email - Masalan ali@gmail.com">
+<input id="pPass" type="password" placeholder="Password - 6 se zyada lafz">
+<button class="btn yellow" onclick="doSignup()">📝 NAYA ACCOUNT BANAO</button>
+<button class="btn green" onclick="doLogin()">🔐 LOGIN KARO</button>
+<button class="btn red" onclick="doLogout()">🚪 LOGOUT</button>
+<p class="small">Email se Login hoga, UID banega, Data Firebase me Safe rahega. New Update pe bhi Data nahi udega.</p>
+<div id="loginStatus"></div>
+</div>
+<div class="box"><h3>📊 MERI STATS</h3><div id="myStats"></div></div>
+<div id="myList"></div>
 </div>
 
-<!-- PAGE 3 - LEADERBOARD -->
-<div id="page-leader" class="page">
-<h2>🏆 LEADERBOARD</h2>
-<div class="box"><h2>👑 TOP 10 LEADERBOARD</h2><p class="small">Sabse zyada jeetne wale players!</p><div id="leadList"></div></div>
-<div class="box"><h2>🏆 WINNERS - Pichle Winners</h2><div id="wList"></div></div>
-<div class="box"><h2>📊 LIVE RESULTS - Kills Ka Prize</h2><div id="resListPage"></div></div>
-</div>
-
-<!-- PAGE 4 - REWARDS -->
-<div id="page-rewards" class="page">
-<h2>🎁 REWARDS</h2>
-<div class="box rewardBox"><h2 style="color:#ffcc00;margin:0">🎁 ROZ KA INAAM</h2><p class="small">Roz App Kholo - 1 Rs Free | Dost Ko Bulao - 2 Rs Free</p><button class="btn yellow" onclick="claimDaily()">📅 Daily - 1 Rs Lo</button><p id="dailyMsg" style="font-weight:900;color:#00ff88"></p><hr style="border-color:#444"><h3>📲 Share Karo - 2 Rs Pao</h3><p class="small">Tumhara Referral Code:</p><h1 id="myRefCode" style="color:#ffcc00;margin:0">-</h1><button class="btn green" onclick="shareApp()">📲 WhatsApp Pe Share Karo</button><input id="refInput" placeholder="Dost Ka Referral Code Yahan Likho - 2 Rs Pao"><button class="btn purple" onclick="applyReferral()">✅ Code Lagao - 2 Rs Pao</button><p id="refMsg" style="font-weight:900;color:#00ff88"></p></div>
-<div class="box"><h3>❓ Kaise Milega?</h3><p style="text-align:left;font-size:14px;line-height:22px">📅 <b>Daily:</b> Roz App kholo - Daily button dabao - 1 Rs mil jayega!<br>📲 <b>Share:</b> Share dabao - Dost ko bhejo - Wo tumhara code lagayega - Dono ko 2 Rs!<br>💰 <b>Note:</b> Ek code sirf ek baar lag sakta hai!</p></div>
-</div>
-
-<!-- PAGE 5 - PENDING / MY MATCHES -->
-<div id="page-pending" class="page">
-<h2>⏳ MY MATCHES & PENDING</h2>
-<div class="box"><h3>💺 MERI SEATS - Maine Jo Matches Join Kiye</h3><div id="myMatches"></div></div>
-<div class="box"><h3>⏳ PENDING REQUESTS</h3><p class="small">Deposit / Withdraw jo abhi approve nahi hua!</p><div id="myPending"></div></div>
-<div class="box"><h3>🔑 MERE ROOM ID - Sirf Mere Liye</h3><div id="myRooms"></div></div>
-</div>
-
-<div class="footer"><b>MOBI BATTLE PK</b><br>WhatsApp: 03218427826<br>© 2026 Mobi Battle PK</div>
-
-<!-- BOTTOM NAV -->
 <div class="bottomNav">
-<button class="navBtn active" id="nav-matches" onclick="showPage('matches')"><span>🏠</span>MATCHES</button>
-<button class="navBtn" id="nav-wallet" onclick="showPage('wallet')"><span>💰</span>WALLET</button>
-<button class="navBtn" id="nav-leader" onclick="showPage('leader')"><span>🏆</span>LEADER</button>
-<button class="navBtn" id="nav-rewards" onclick="showPage('rewards')"><span>🎁</span>REWARDS</button>
-<button class="navBtn" id="nav-pending" onclick="showPage('pending')"><span>⏳</span>MY / PENDING</button>
+<button class="navBtn active" onclick="showPage('page-home',this)"><span>🏠</span>HOME</button>
+<button class="navBtn" onclick="showPage('page-matches',this)"><span>🎮</span>MATCHES</button>
+<button class="navBtn" onclick="showPage('page-wallet',this)"><span>💰</span>WALLET</button>
+<button class="navBtn" onclick="showPage('page-my',this)"><span>👤</span>MY</button>
 </div>
 
-<div id="seatModal"><div style="background:#111;border-radius:18px;padding:15px;max-width:500px;margin:0 auto"><h2 id="seatTitle" style="color:#ffcc00;margin:0">🎯 Seat Select Karo</h2><p id="seatSub" class="small"></p><p id="seatCount" style="font-weight:900;color:#00ff88"></p><div id="seatGrid" class="seatGrid"></div><div id="seatForm" class="seatForm" style="display:none"><h3 style="margin:0;color:#ffcc00">📝 Apni Detail Likho - <span id="selSeatLabel"></span></h3><input id="sIgn" placeholder="In Game Name - IGN"><input id="sUid" placeholder="Free Fire UID"><input id="sName" placeholder="Apna Naam"><input id="sWa" placeholder="WhatsApp Number - 03XX"><p id="seatPayInfo" style="font-weight:900;color:#00ff88"></p><button class="btn yellow" onclick="confirmSeat()">✅ Confirm - Coin Kat Jayenge - Seat Pakki</button><button class="btn red" onclick="cancelSeatSelect()">❌ Dusri Seat Lo</button></div><button class="btn green" onclick="closeSeat()">❌ Band Karo</button><div id="seatPlayers" style="text-align:left;margin-top:10px"></div></div></div>
+<div id="seatModal"><div style="display:flex;justify-content:space-between"><h3 id="seatTitle">Seat Chuno</h3><button class="btn red" style="width:80px;padding:8px" onclick="closeSeat()">✕</button></div><div id="seatGrid" class="seatGrid"></div><div style="background:#1a1a1a;padding:14px;border-radius:15px;border:2px solid #ffcc00"><input id="seatName" placeholder="In-Game Naam"><button class="btn yellow" onclick="confirmSeat()">✅ SEAT CONFIRM KARO</button><p class="small" id="seatInfo"></p></div></div>
 
-<div id="waPopup"><div class="waBox"><h2 style="color:#25D366;margin:0">✅ Ho Gaya! Ab WhatsApp Pe Bhejo!</h2><p class="small">Neeche wala message copy ho gaya hai.</p><pre id="waText"></pre><a id="waLink" href="#" target="_blank" style="text-decoration:none"><button class="btn green" style="width:100%">📲 WHATSAPP KHOLO</button></a><button class="btn yellow" onclick="copyWa()">📋 Copy Karo</button><button class="btn red" onclick="closeWaPopup()">❌ Band Karo</button></div></div>
-
-<div id="ownerPanel"><h2 style="color:#ffcc00">👑 OWNER PANEL - SECRET</h2><button class="btn green" onclick="closeOwner()">❌ Band Karo</button>
-<div class="box ownerBox"><h3>🪙 Kisi Player Ko Coin Bhejo</h3><input id="sendIgn" placeholder="Player IGN"><input id="sendUid" placeholder="Player UID"><input id="sendAmt" type="number" placeholder="Kitne Rs. - 500"><input id="sendNote" placeholder="Note"><button class="btn purple" onclick="sendCoin()">🪙 COIN BHEJO</button><div id="sendList"></div></div>
-<div class="box"><h3>🔑 ROOM ID / PASSWORD</h3><select id="roomTour"></select><input id="roomId" placeholder="Room ID"><input id="roomPass" placeholder="Password"><button class="btn orange" onclick="setRoom()">🔑 Room Set Karo</button><div id="roomList"></div></div>
-<div class="box"><h3>🏆 LIVE RESULT - Kills + Prize</h3><select id="resTour"></select><select id="resPlayer"></select><input id="resKills" type="number" placeholder="Kitne Kills? - 5"><input id="resPerKill" type="number" placeholder="Per Kill Rs? - 30"><button class="btn green" onclick="addResult()">🏆 Result Add - Prize Do</button><div id="resList"></div></div>
-<div class="box"><h3>💰 DEPOSIT Requests</h3><div id="oAdd"></div></div>
-<div class="box"><h3>💸 Withdraw Requests</h3><div id="oWithdraw"></div></div>
-<div class="box"><h3>💺 Seats</h3><div id="oSeats"></div></div>
-<div class="box"><h3>➕ Naya Tournament</h3><input id="oTitle" placeholder="Title"><select id="oCat"><option value="brkill">🎯 BR PER KILL</option><option value="survival">🏆 SURVIVAL</option><option value="cs">💣 CS CUSTOM</option><option value="lonewolf">👤 LONE WOLF</option></select><select id="oMap"><option>Bermuda</option><option>Purgatory</option><option>Kalahari</option><option>NeXTerra</option><option>Craftland</option><option>CS - Bermuda</option><option>Lone Wolf - Craftland</option></select><select id="oMode"><option>Solo</option><option>Duo</option><option>Squad</option><option>Lone Wolf 1v1</option><option>CS Custom 4v4</option></select><input id="oTime" type="datetime-local"><input id="oEntry" placeholder="Entry Fee" type="number"><input id="oPrize" placeholder="Prize" type="number"><input id="oPerKill" placeholder="Per Kill" type="number"><input id="oImg" placeholder="Pic Link"><button class="btn yellow" onclick="addTour()">➕ Tournament Add Karo</button></div>
-<div class="box"><h3>📋 Tournaments</h3><div id="oList"></div></div>
-<div class="box"><h3>🏆 Winner Add</h3><input id="wName2" placeholder="Winner IGN"><input id="wAmt" placeholder="Prize"><button class="btn green" onclick="addWinner()">🏆 Winner Add + Prize Do</button><div id="oWList"></div></div>
-<div class="box"><h3>⚙️ Settings</h3><button class="btn red" onclick="resetAll()">⚠️ Sab Reset</button></div></div>
+<div id="ownerPanel">
+<div style="display:flex;justify-content:space-between"><h2>👑 OWNER PANEL</h2><button class="btn red" style="width:90px" onclick="closeOwner()">✕ BAND</button></div>
+<div class="box ownerBox"><h3>🔍 PLAYER SEARCH - UID SE</h3><div class="searchBox"><input id="searchUid" placeholder="UID ya Phone ya Naam likho - Masalan 0321..."><button class="btn yellow" onclick="searchPlayer()">🔍 SEARCH KARO</button><div id="searchResult"></div></div></div>
+<div class="box ownerBox"><h3>👥 ALL PLAYERS - FULL DETAIL</h3><div id="allPlayers"></div></div>
+<div class="box ownerBox"><h3>➕ NAYA TOURNAMENT</h3><input id="oTitle" placeholder="Match Title"><select id="oCat"><option>SOLO</option><option>DUO</option><option>SQUAD</option></select><input id="oTime" placeholder="Time - Aaj 8 PM"><input id="oEntry" type="number" placeholder="Entry Fee"><input id="oPrize" type="number" placeholder="Prize"><input id="oPerKill" type="number" placeholder="Per Kill"><button class="btn purple" onclick="addMatch()">➕ MATCH ADD KARO</button></div>
+<div class="box ownerBox"><h3>🏠 ROOM ID</h3><div id="roomList"></div></div>
+<div class="box ownerBox"><h3>💰 DEPOSIT</h3><div id="depositList"></div></div>
+<div class="box ownerBox"><h3>💸 WITHDRAW - COIN KATNE WALA FIX</h3><div id="withdrawList"></div></div>
+<div class="box ownerBox"><h3>🏆 WINNER</h3><div id="winnerDeclare"></div></div>
+<div class="box ownerBox"><h3>📋 ALL MATCHES</h3><div id="ownerMatches"></div></div>
+<button class="btn red" onclick="resetAll()">⚠️ SAB DATA DELETE</button>
+</div>
 
 <script>
-let WA="03218427826";
-let WA_INT="923218427826";
-let curFilter='all';
-let curTour=-1, selSeat=-1, lastWaText="", curPage='matches';
-let balance=parseInt(localStorage.getItem('mb_bal')||'0');
-let hist=JSON.parse(localStorage.getItem('mb_hist')||'[]');
-let withReqs=JSON.parse(localStorage.getItem('mb_with')||'[]');
-let addReqs=JSON.parse(localStorage.getItem('mb_add')||'[]');
-let coinSends=JSON.parse(localStorage.getItem('mb_coinsend')||'[]');
-let results=JSON.parse(localStorage.getItem('mb_results')||'[]');
-let totalWin=parseInt(localStorage.getItem('mb_win')||'0');
-let totalPlay=parseInt(localStorage.getItem('mb_play')||'0');
-function catPic(cat){if(cat=='brkill') return "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&q=80";if(cat=='survival') return "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?w=800&q=80";if(cat=='cs') return "https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=800&q=80";if(cat=='lonewolf') return "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=800&q=80";return "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&q=80";}
-function makeSeats(n){let a=[];for(let i=0;i<n;i++)a.push({taken:false,ign:'',uid:'',name:'',wa:''});return a;}
-function seatCountFor(mode){if(mode.includes('CS'))return 8;if(mode.includes('Lone'))return 8;return 12;}
-let tours=JSON.parse(localStorage.getItem('mb_tours_v7')||'null')||[
-{title:"BR Per Kill - Solo",map:"Bermuda",mode:"Solo",cat:"brkill",time:Date.now()+2*3600000,entry:100,prize:3000,perKill:30,img:catPic('brkill'),seats:makeSeats(12),roomId:'',roomPass:''},
-{title:"BR Per Kill - Duo",map:"Purgatory",mode:"Duo",cat:"brkill",time:Date.now()+3*3600000,entry:200,prize:4000,perKill:25,img:catPic('brkill'),seats:makeSeats(12),roomId:'',roomPass:''},
-{title:"Survival - Solo King",map:"Bermuda",mode:"Solo",cat:"survival",time:Date.now()+4*3600000,entry:100,prize:5000,perKill:0,img:catPic('survival'),seats:makeSeats(12),roomId:'',roomPass:''},
-{title:"Survival - Squad Mega",map:"Bermuda",mode:"Squad",cat:"survival",time:Date.now()+24*3600000,entry:300,prize:25000,perKill:0,img:catPic('survival'),seats:makeSeats(12),roomId:'',roomPass:''},
-{title:"CS Custom - 4v4",map:"CS - Bermuda",mode:"CS Custom 4v4",cat:"cs",time:Date.now()+6*3600000,entry:200,prize:2100,perKill:0,img:catPic('cs'),seats:makeSeats(8),roomId:'',roomPass:''},
-{title:"Lone Wolf - 1v1 Battle",map:"Lone Wolf - Craftland",mode:"Lone Wolf 1v1",cat:"lonewolf",time:Date.now()+5*3600000,entry:50,prize:500,perKill:0,img:catPic('lonewolf'),seats:makeSeats(8),roomId:'',roomPass:''}
-];
-let winners=JSON.parse(localStorage.getItem('mb_winners')||'null')||[{name:"Mobi YT",amt:5000},{name:"Ayan FF",amt:3500}];
-let leaders=[{n:"Mobi YT",w:12,p:18500},{n:"Ayan FF",w:9,p:14200},{n:"Hamza King",w:8,p:11000},{n:"Usman Pro",w:7,p:9800},{n:"Ali Gamer",w:6,p:8400}];
-function save(){localStorage.setItem('mb_tours_v7',JSON.stringify(tours));localStorage.setItem('mb_winners',JSON.stringify(winners));localStorage.setItem('mb_bal',balance);localStorage.setItem('mb_hist',JSON.stringify(hist));localStorage.setItem('mb_with',JSON.stringify(withReqs));localStorage.setItem('mb_add',JSON.stringify(addReqs));localStorage.setItem('mb_coinsend',JSON.stringify(coinSends));localStorage.setItem('mb_results',JSON.stringify(results));localStorage.setItem('mb_win',totalWin);localStorage.setItem('mb_play',totalPlay);}
-function fmt(t){return new Date(t).toLocaleString('en-PK',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});}
-function catName(c){if(c=='brkill')return '🎯 BR PER KILL';if(c=='survival')return '🏆 SURVIVAL';if(c=='cs')return '💣 CS CUSTOM';if(c=='lonewolf')return '👤 LONE WOLF';return 'ALL';}
-// PAGE SWITCH - YE NAYA HAI
-function showPage(p){
-curPage=p;
-document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
-document.getElementById('page-'+p).classList.add('active');
-document.querySelectorAll('.navBtn').forEach(el=>el.classList.remove('active'));
-document.getElementById('nav-'+p).classList.add('active');
-window.scrollTo({top:0,behavior:'smooth'});
-render();
+// ============ YAHAN APNA FIREBASE CONFIG DALO ============
+// Firebase Console > Project Settings > Web App se Copy kar ke yahan paste karo
+const firebaseConfig = {
+  apiKey: "YAHAN_API_KEY_DALO",
+  authDomain: "YAHAN_AUTH_DOMAIN_DALO",
+  projectId: "YAHAN_PROJECT_ID_DALO",
+  storageBucket: "YAHAN_STORAGE_DALO",
+  messagingSenderId: "YAHAN_SENDER_ID_DALO",
+  appId: "YAHAN_APP_ID_DALO"
+};
+// ==========================================================
+let db=null, auth=null, firebaseOn=false;
+try{
+  firebase.initializeApp(firebaseConfig);
+  auth=firebase.auth(); db=firebase.firestore(); firebaseOn=true;
+}catch(e){ console.log("Firebase Config abhi nahi dala, Local Mode chal raha hai"); }
+
+let ownerClicks=0, currentFilter='ALL', currentMatchId=null, selectedSeat=null;
+let currentUser=JSON.parse(localStorage.getItem('mobi_current')||'null');
+let users=JSON.parse(localStorage.getItem('mobi_users')||'[]');
+let matches=JSON.parse(localStorage.getItem('mobi_matches')||'[]');
+let deposits=JSON.parse(localStorage.getItem('mobi_deposits')||'[]');
+let withdraws=JSON.parse(localStorage.getItem('mobi_withdraws')||'[]');
+let bookings=JSON.parse(localStorage.getItem('mobi_bookings')||'[]');
+
+if(matches.length==0){
+matches=[
+{id:1,title:'SOLO - Evening Blast',cat:'SOLO',time:'Aaj 8:00 PM',entry:50,prize:500,perKill:10,map:'Bermuda',img:'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800',roomId:'',roomPass:''},
+{id:2,title:'DUO - Night Hunters',cat:'DUO',time:'Aaj 10:00 PM',entry:100,prize:1200,perKill:15,map:'Purgatory',img:'https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=800',roomId:'',roomPass:''}
+]; saveAll();
 }
-function setFilter(f){curFilter=f;document.querySelectorAll('.fBtn').forEach(b=>b.classList.remove('active'));document.getElementById('btn-'+f).classList.add('active');render();}
-function goTour(){showPage('matches');}
-function getMyRef(){let ign=localStorage.getItem('mb_ign')||'MOBI';let code='MOBI'+ign.replace(/[^A-Za-z0-9]/g,'').toUpperCase().substring(0,6);if(!code||code=='MOBI')code='MOBI123';return code;}
-function updateRefUI(){let el=document.getElementById('myRefCode');if(el)el.innerText=getMyRef();}
-function claimDaily(){let today=new Date().toDateString();let last=localStorage.getItem('mb_daily');if(last==today){document.getElementById('dailyMsg').innerText='Aaj ka 1 Rs pehle se mil chuka hai! Kal phir aana!';return;}localStorage.setItem('mb_daily',today);balance+=1; totalWin+=1;hist.unshift('📅 Daily Login Bonus: +1 Rs');save();render();document.getElementById('dailyMsg').innerText='Mubarak! Daily 1 Rs mil gaya!';}
-function shareApp(){let code=getMyRef();let msg=`🔥 MOBI BATTLE PK - Free Fire Tournament!\nMera Referral Code: ${code}\nCode lagao aur 2 Rs pao!\nRoz Daily 1 Rs Free!`;showWaPopup(msg);}
-function applyReferral(){let code=document.getElementById('refInput').value.trim().toUpperCase();if(!code){alert('Code likho!');return;}if(code==getMyRef()){alert('Apna hi code nahi laga sakte!');return;}if(localStorage.getItem('mb_ref_used')){alert('Tum pehle hi ek code laga chuke ho!');return;}localStorage.setItem('mb_ref_used',code);balance+=2; totalWin+=2;hist.unshift(`🎁 Referral Bonus: +2 Rs - Code: ${code}`);save();render();document.getElementById('refMsg').innerText='Mubarak! 2 Rs mil gaye!';}
-function setRoom(){let ti=+document.getElementById('roomTour').value;let rid=document.getElementById('roomId').value.trim();let rpass=document.getElementById('roomPass').value.trim();if(!rid){alert('Room ID likho!');return;}tours[ti].roomId=rid; tours[ti].roomPass=rpass;save();render();alert('Room Set Ho Gaya!');}
-function refreshRoomSelect(){let opts="";tours.forEach((t,i)=>{opts+=`<option value="${i}">${t.title} - Room: ${t.roomId||'Nahi Set'}</option>`});let rt=document.getElementById('roomTour'); if(rt) rt.innerHTML=opts;let resT=document.getElementById('resTour'); if(resT) resT.innerHTML=opts;refreshResPlayers();}
-function refreshResPlayers(){let ti=+document.getElementById('resTour')?.value||0;let t=tours[ti]; if(!t) return;let opts="";(t.seats||[]).forEach((s,i)=>{if(s.taken) opts+=`<option value="${i}">Seat ${i+1} - ${s.ign} - UID ${s.uid}</option>`});let rp=document.getElementById('resPlayer'); if(rp) rp.innerHTML=opts||"<option>Abhi koi player nahi</option>";}
-function addResult(){let ti=+document.getElementById('resTour').value;let si=+document.getElementById('resPlayer').value;let kills=+document.getElementById('resKills').value;let perKill=+document.getElementById('resPerKill').value||tours[ti].perKill||0;if(!kills){alert('Kills likho!');return;}let t=tours[ti]; let p=t.seats[si];let prize=kills*perKill;results.unshift({match:t.title,ign:p.ign,uid:p.uid,kills,prize});balance+=prize; totalWin+=prize;hist.unshift(`🏆 Result: ${t.title} - ${kills} Kills = +Rs.${prize}`);save();render();alert(`${p.ign} ko ${kills} kills ka Rs.${prize} mil gaya!`);document.getElementById('resKills').value='';}
-function showWaPopup(text){lastWaText=text;document.getElementById('waText').innerText=text;document.getElementById('waLink').href="https://wa.me/"+WA_INT+"?text="+encodeURIComponent(text);document.getElementById('waPopup').style.display='block';try{navigator.clipboard.writeText(text);}catch(e){}}
-function closeWaPopup(){document.getElementById('waPopup').style.display='none';}
-function copyWa(){try{navigator.clipboard.writeText(lastWaText);alert('Copy Ho Gaya!');}catch(e){alert('Copy nahi hua');}}
-function openWA(){showWaPopup("Salam! MOBI BATTLE PK - Mujhe Tournament Join Karna Hai!");}
-function joinTour(i){curTour=i; selSeat=-1;let t=tours[i];if(!t.seats) t.seats=makeSeats(seatCountFor(t.mode));document.getElementById('seatTitle').innerText='💺 '+t.title+' - Seat Chuno';document.getElementById('seatSub').innerText=t.mode+' • '+t.map+' • Entry Rs.'+t.entry+' • '+fmt(t.time);document.getElementById('seatForm').style.display='none';document.getElementById('seatModal').style.display='block';renderSeats();}
-function renderSeats(){let t=tours[curTour];let taken=t.seats.filter(s=>s.taken).length;document.getElementById('seatCount').innerText=`${taken}/${t.seats.length} Seats Full - ${t.seats.length-taken} Khali Hain`;let g='';t.seats.forEach((s,i)=>{if(s.taken) g+=`<div class="seat taken">Seat ${i+1}<small>🔒 ${s.ign}<br>UID: ${s.uid}</small></div>`;else g+=`<div class="seat free ${selSeat==i?'selected':''}" onclick="pickSeat(${i})">Seat ${i+1}<small>✅ Khali - Dabao</small></div>`;});document.getElementById('seatGrid').innerHTML=g;let pl='<h3>👥 Joined Players:</h3>';let any=false;t.seats.forEach((s,i)=>{if(s.taken){any=true;pl+=`<div style="background:#222;padding:8px;margin:5px;border-radius:8px">💺 Seat ${i+1} - <b>${s.ign}</b> | UID: ${s.uid} | Naam: ${s.name} | WA: ${s.wa}</div>`}});if(!any) pl+='<p class="small">Abhi koi join nahi hua!</p>';document.getElementById('seatPlayers').innerHTML=pl;}
-function pickSeat(i){let t=tours[curTour];if(t.seats[i].taken){alert('Ye seat full hai!');return;}selSeat=i;document.getElementById('seatForm').style.display='block';document.getElementById('selSeatLabel').innerText='Seat '+(i+1);document.getElementById('seatPayInfo').innerText=`Entry: Rs.${t.entry} - Wallet se katega - Balance: Rs.${balance}`;let saved=localStorage.getItem('mb_ign')||''; if(saved) document.getElementById('sIgn').value=saved;document.getElementById('seatForm').scrollIntoView({behavior:'smooth'});renderSeats();}
-function cancelSeatSelect(){selSeat=-1;document.getElementById('seatForm').style.display='none';renderSeats();}
-function closeSeat(){document.getElementById('seatModal').style.display='none';curTour=-1;selSeat=-1;}
+function saveAll(){
+localStorage.setItem('mobi_users',JSON.stringify(users));
+localStorage.setItem('mobi_matches',JSON.stringify(matches));
+localStorage.setItem('mobi_deposits',JSON.stringify(deposits));
+localStorage.setItem('mobi_withdraws',JSON.stringify(withdraws));
+localStorage.setItem('mobi_bookings',JSON.stringify(bookings));
+if(currentUser) localStorage.setItem('mobi_current',JSON.stringify(currentUser));
+if(firebaseOn && currentUser && currentUser.uid){
+  db.collection('users').doc(currentUser.uid).set(currentUser,{merge:true}).catch(()=>{});
+}
+}
+function getUser(){ if(!currentUser) return null; return users.find(x=>x.phone==currentUser.phone) || currentUser; }
+function getPlayerStats(phone){
+  let myBookings=bookings.filter(b=>b.phone==phone);
+  let totalGames=myBookings.length;
+  let totalSpent=myBookings.reduce((s,b)=>s+b.entry,0);
+  return {totalGames,totalSpent};
+}
+function showPage(id,btn){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.getElementById(id).classList.add('active'); if(btn){document.querySelectorAll('.navBtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');} window.scrollTo(0,0); render(); }
+function setFilter(f,btn){currentFilter=f;document.querySelectorAll('.fBtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');render();}
+function ownerClick(){ownerClicks++;if(ownerClicks>=7){ownerClicks=0;let p=prompt('Owner Password:');if(p=='mobi804'){document.getElementById('ownerPanel').style.display='block';renderOwner();}else if(p!=null) alert('Galat Password!');}setTimeout(()=>ownerClicks=0,3000);}
+function closeOwner(){document.getElementById('ownerPanel').style.display='none';}
+
+// ----- LOGIN SYSTEM - FIREBASE -----
+async function doSignup(){
+  let name=document.getElementById('pName').value.trim();
+  let phone=document.getElementById('pPhone').value.trim();
+  let email=document.getElementById('pEmail').value.trim();
+  let pass=document.getElementById('pPass').value.trim();
+  if(!name||!phone||!email||!pass) return alert('Sab kuch likho - Naam, Phone, Email, Password!');
+  if(pass.length<6) return alert('Password 6 se bara rakho!');
+  if(firebaseOn){
+    try{
+      let cred=await auth.createUserWithEmailAndPassword(email,pass);
+      let uid=cred.user.uid;
+      currentUser={uid:uid,id:uid,name:name,phone:phone,email:email,coins:0,totalGames:0,createdAt:new Date().toISOString()};
+      users.push(currentUser);
+      await db.collection('users').doc(uid).set(currentUser);
+      saveAll(); render(); alert('Account Ban Gaya! UID: '+uid);
+    }catch(e){ alert('Error: '+e.message); }
+  }else{
+    let uid='UID-'+Date.now();
+    currentUser={uid:uid,id:uid,name:name,phone:phone,email:email,coins:0};
+    let ex=users.find(u=>u.phone==phone); if(!ex) users.push(currentUser); else currentUser=ex;
+    saveAll(); render(); alert('Account Ban Gaya! (Local Mode - Firebase Config dalo taake Data Safe rahe) UID: '+uid);
+  }
+}
+async function doLogin(){
+  let email=document.getElementById('pEmail').value.trim();
+  let pass=document.getElementById('pPass').value.trim();
+  if(!email||!pass) return alert('Email aur Password likho!');
+  if(firebaseOn){
+    try{
+      let cred=await auth.signInWithEmailAndPassword(email,pass);
+      let uid=cred.user.uid;
+      let doc=await db.collection('users').doc(uid).get();
+      if(doc.exists){ currentUser=doc.data(); let ex=users.find(u=>u.uid==uid); if(!ex) users.push(currentUser); }
+      else{ currentUser={uid:uid,email:email,coins:0,name:'Player',phone:''}; users.push(currentUser); }
+      saveAll(); render(); alert('Login Ho Gaya! Welcome '+ (currentUser.name||'Player'));
+    }catch(e){ alert('Login Fail: '+e.message); }
+  }else{
+    let u=users.find(x=>x.email==email); if(!u) return alert('Pehle Signup karo!');
+    currentUser=u; saveAll(); render(); alert('Login Ho Gaya (Local Mode)!');
+  }
+}
+function doLogout(){ if(firebaseOn) auth.signOut(); currentUser=null; localStorage.removeItem('mobi_current'); render(); alert('Logout Ho Gaya!'); }
+function claimReward(){ let u=getUser(); if(!u) return alert('Pehle Login karo!'); u.coins=(u.coins||0)+5; currentUser=u; saveAll(); render(); alert('5 Coins Mil Gaye!'); }
+
+function requestDeposit(){
+  let u=getUser(); if(!u) return alert('Pehle Login karo!');
+  let amt=parseInt(document.getElementById('addAmount').value); let trx=document.getElementById('addTrx').value.trim();
+  if(!amt||!trx) return alert('Amount aur Trx ID likho!');
+  deposits.push({id:Date.now(),uid:u.uid||'',phone:u.phone,name:u.name,amount:amt,trx:trx,status:'PENDING'});
+  saveAll(); render(); alert('Deposit Request Bhej Di!');
+}
+function requestWithdraw(){
+  let u=getUser(); if(!u) return alert('Pehle Login karo!');
+  let amt=parseInt(document.getElementById('wdAmount').value); let num=document.getElementById('wdNumber').value.trim();
+  if(!amt||!num) return alert('Amount aur Number likho!');
+  if(amt<50) return alert('Minimum 50 Coins!');
+  if((u.coins||0)<amt) return alert('Coins kam hain! Balance: '+(u.coins||0));
+  withdraws.push({id:Date.now(),uid:u.uid||'',phone:u.phone,name:u.name,amount:amt,number:num,method:'JazzCash',status:'PENDING'});
+  saveAll(); render(); alert('Withdraw Request Bhej Di! Approve pe Coins katenge.');
+}
+function openSeat(id){ currentMatchId=id; selectedSeat=null; let m=matches.find(x=>x.id==id); document.getElementById('seatTitle').innerText=m.title+' - Seat Chuno'; document.getElementById('seatModal').style.display='block'; renderSeats(); }
+function closeSeat(){document.getElementById('seatModal').style.display='none';}
+function renderSeats(){
+  let m=matches.find(x=>x.id==currentMatchId); if(!m) return;
+  let total=m.cat=='SOLO'?48:m.cat=='DUO'?24:12;
+  let html='';
+  for(let i=1;i<=total;i++){ let b=bookings.find(x=>x.matchId==currentMatchId&&x.seat==i); if(b) html+='<div class="seat taken">Seat '+i+'<br><small>'+b.name+'</small></div>'; else html+='<div class="seat free '+(selectedSeat==i?'selected':'')+'" onclick="selectSeat('+i+',this)">Seat '+i+'</div>'; }
+  document.getElementById('seatGrid').innerHTML=html;
+  let u=getUser(); if(u) document.getElementById('seatName').value=u.name;
+  document.getElementById('seatInfo').innerText='Entry: '+m.entry+' | Prize: '+m.prize;
+}
+function selectSeat(i,el){selectedSeat=i;document.querySelectorAll('.seat').forEach(s=>s.classList.remove('selected'));el.classList.add('selected');}
 function confirmSeat(){
-if(curTour<0||selSeat<0){alert('Pehle seat chuno!');return;}
-let t=tours[curTour];
-let ign=document.getElementById('sIgn').value.trim();
-let uid=document.getElementById('sUid').value.trim();
-let name=document.getElementById('sName').value.trim();
-let wa=document.getElementById('sWa').value.trim();
-if(!ign||!uid||!name||!wa){alert('Sab bharo!');return;}
-if(balance<t.entry){alert('Wallet me paisa kam hai! Balance: Rs.'+balance);closeSeat();showPage('wallet');showAdd();return;}
-if(t.seats[selSeat].taken){alert('Ye seat abhi le li gayi!');renderSeats();return;}
-balance-=t.entry; totalPlay++;
-t.seats[selSeat]={taken:true,ign,uid,name,wa};
-localStorage.setItem('mb_ign',ign);
-hist.unshift(`🎮 Seat ${selSeat+1} Pakki: ${t.title} - Rs.${t.entry} kata - IGN: ${ign} UID: ${uid}`);
-save(); render(); renderSeats();
-document.getElementById('seatForm').style.display='none';
-let msg=`🎮 SEAT BOOKED\nMatch: ${t.title}\nSeat: ${selSeat+1}\nIGN: ${ign}\nUID: ${uid}\nNaam: ${name}\nWhatsApp: ${wa}`;
-closeSeat(); updateRefUI();
-showWaPopup(msg);
+  let m=matches.find(x=>x.id==currentMatchId); let u=getUser(); if(!u) return alert('Pehle Login karo!');
+  let name=document.getElementById('seatName').value.trim()||u.name;
+  if(!selectedSeat) return alert('Seat Chuno!');
+  if((u.coins||0)<m.entry) return alert('Coins kam hain! Balance: '+(u.coins||0));
+  u.coins-=m.entry; u.totalGames=(u.totalGames||0)+1; currentUser=u;
+  bookings.push({id:Date.now(),matchId:m.id,seat:selectedSeat,name:name,phone:u.phone,uid:u.uid||'',entry:m.entry});
+  saveAll(); renderSeats(); render(); alert('Seat '+selectedSeat+' Book!'); closeSeat();
 }
-function sendCoin(){let ign=document.getElementById('sendIgn').value.trim();let uid=document.getElementById('sendUid').value.trim();let amt=+document.getElementById('sendAmt').value;let note=document.getElementById('sendNote').value||'Owner Bonus';if(!ign||!amt){alert('IGN aur Amount likho!');return;}coinSends.unshift({ign:ign.toLowerCase(),ignShow:ign,uid,amt,note,status:'Sent'});save();render();alert(`Ho Gaya! ${ign} ko Rs.${amt} bhej diye!`);document.getElementById('sendIgn').value='';document.getElementById('sendUid').value='';document.getElementById('sendAmt').value='';document.getElementById('sendNote').value='';}
-function checkCoin(){let myIgn=(localStorage.getItem('mb_ign')||'').toLowerCase().trim();if(!myIgn) return;let found=false;coinSends.forEach(c=>{if(c.ign==myIgn && c.status=='Sent'){balance+=c.amt; totalWin+=c.amt; hist.unshift(`🪙 Owner Ne Bheja: +Rs.${c.amt} - ${c.note}`); c.status='Claimed ✅'; found=true;}});if(found){save();let m=document.getElementById('coinMsg');m.style.display='block';m.innerText='🪙 Owner Ne Tumhe Coin Bheja Hai!';setTimeout(()=>{m.style.display='none'},5000);render();}}
+function addMatch(){
+  let title=document.getElementById('oTitle').value.trim(); let cat=document.getElementById('oCat').value; let time=document.getElementById('oTime').value.trim();
+  let entry=parseInt(document.getElementById('oEntry').value)||50; let prize=parseInt(document.getElementById('oPrize').value)||500; let perKill=parseInt(document.getElementById('oPerKill').value)||10;
+  if(!title||!time) return alert('Title aur Time likho!');
+  matches.unshift({id:Date.now(),title:title,cat:cat,time:time,entry:entry,prize:prize,perKill:perKill,map:'Bermuda',img:'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800',roomId:'',roomPass:''});
+  saveAll(); renderOwner(); render(); alert('Match Add Ho Gaya!');
+}
 function render(){
-document.getElementById('bal').innerText="Rs. "+balance;
-document.getElementById('totalWin').innerText="Rs. "+totalWin;
-document.getElementById('totalPlay').innerText=totalPlay;
-document.getElementById('wName').innerText=localStorage.getItem('mb_ign')||'Guest';
-let hh="";hist.slice().reverse().forEach(h=>{hh+=`<div class="hist">${h}</div>`});if(hh)document.getElementById('histList').innerHTML=hh;
-let filtered=tours.map((t,i)=>({...t,orig:i})).filter(t=>curFilter=='all'||t.cat==curFilter);
-document.getElementById('filterInfo').innerText = curFilter=='all' ? `Sab Matches - ${filtered.length} Matches` : `${catName(curFilter)} - ${filtered.length} Matches`;
-let myIgn=(localStorage.getItem('mb_ign')||'').toLowerCase();
-let h="";
-if(filtered.length==0){h=`<div class="box"><h3>😢 Is Category Me Abhi Koi Match Nahi!</h3><button class="btn yellow" onclick="setFilter('all')">🔥 Sab Dekho</button></div>`;}
-filtered.forEach((t)=>{
-let taken=(t.seats||[]).filter(s=>s.taken).length;let total=(t.seats||[]).length;
-let prizeLine = t.cat=='brkill' ? `🏆 Prize: Rs. ${t.prize} | 🔫 Per Kill: <b style="color:#00ff88">Rs. ${t.perKill}</b>` : `🏆 Winner Prize: Rs. ${t.prize}`;
-let img = t.img || catPic(t.cat);
-let iJoined=(t.seats||[]).some(s=>s.taken && s.ign.toLowerCase()==myIgn);
-let roomHtml="";
-if(iJoined && t.roomId){roomHtml=`<div class="roomBox">🔑 <b>TUMHARA ROOM:</b><br>Room ID: <b>${t.roomId}</b> | Password: <b>${t.roomPass||'No Pass'}</b></div>`;}
-else if(t.roomId){roomHtml=`<p class="small">🔒 Room Set Hai - Seat Lo To Room ID Dikhayega!</p>`;}
-h+=`<div class="card"><div class="card-img-wrap"><img class="card-img" src="${img}" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800'"><div class="catBadge">${catName(t.cat)}</div><div class="prizeBadge">🏆 Rs. ${t.prize}</div></div><div class="card-body"><span class="tag">${t.mode} • ${t.map}</span><h3>${t.title}</h3><p>🗺️ Map: <b>${t.map}</b> | ⏰ ${fmt(t.time)}</p><p class="count" data-time="${t.time}">⏳ Loading...</p><p>🎟️ Entry: Rs. ${t.entry} | ${prizeLine}</p><p style="font-weight:900;color:#00ff88">💺 Seats: ${taken}/${total} Full - ${total-taken} Khali</p>${roomHtml}<button class="btn yellow" onclick="joinTour(${t.orig})">💺 Seat Chuno - Join Now - Rs. ${t.entry}</button></div></div>`;
-});
-document.getElementById('tList').innerHTML=h;
-let wh="";winners.forEach(w=>{wh+=`<div class="winner"><b>🏆 ${w.name}</b><b style="color:#ffcc00">Rs. ${w.amt}</b></div>`});document.getElementById('wList').innerHTML=wh;
-let lh="";leaders.forEach((l,i)=>{lh+=`<div class="leader"><b>${i+1}. ${l.n} - ${l.w} Wins</b><b style="color:#ffcc00">Rs. ${l.p}</b></div>`});document.getElementById('leadList').innerHTML=lh;
-let rl="";results.forEach(r=>{rl+=`<div style="background:#222;padding:8px;margin:5px;border-radius:8px">🏆 ${r.match} - ${r.ign} - ${r.kills} Kills = Rs.${r.prize}</div>`});document.getElementById('resList').innerHTML=rl||"<p class='small'>Abhi koi result nahi</p>";document.getElementById('resListPage').innerHTML=rl||"<p class='small'>Abhi koi result nahi</p>";
-let ow="";withReqs.forEach((w,i)=>{ow+=`<div style="background:#222;padding:10px;margin:6px;border-radius:10px">💸 <b>${w.name}</b> - Rs.${w.amt} - ${w.method} - ${w.num} - <b>${w.status}</b><br><button onclick="approveWith(${i})" style="background:#25D366;color:white;border:none;padding:6px 12px;border-radius:8px">✅ Approve</button> <button onclick="rejectWith(${i})" style="background:red;color:white;border:none;padding:6px 12px;border-radius:8px">❌ Reject</button></div>`});document.getElementById('oWithdraw').innerHTML=ow||"Koi withdraw nahi";
-let oa="";addReqs.forEach((a,i)=>{oa+=`<div style="background:#222;padding:10px;margin:6px;border-radius:10px">💰 DEPOSIT - <b>${a.name}</b> - Rs.${a.amt} - Trx: ${a.trx} - <b>${a.status}</b><br><button onclick="approveAdd(${i})" style="background:#25D366;color:white;border:none;padding:6px 12px;border-radius:8px">✅ Approve</button> <button onclick="rejectAdd(${i})" style="background:red;color:white;border:none;padding:6px 12px;border-radius:8px">❌ Reject</button></div>`});document.getElementById('oAdd').innerHTML=oa||"Koi deposit nahi";
-let cs="";coinSends.forEach((c,i)=>{cs+=`<div style="background:#222;padding:8px;margin:5px;border-radius:8px;display:flex;justify-content:space-between"><span>🪙 ${c.ignShow} - Rs.${c.amt} - ${c.status}</span><button onclick="delCoin(${i})" style="background:red;color:white;border:none;padding:4px 8px;border-radius:6px">X</button></div>`});document.getElementById('sendList').innerHTML=cs||"<p class='small'>Abhi kisi ko coin nahi bheja</p>";
-let rm="";tours.forEach(t=>{if(t.roomId) rm+=`<div style="background:#222;padding:8px;margin:5px;border-radius:8px">🔑 ${t.title} - ID: <b>${t.roomId}</b> - Pass: <b>${t.roomPass}</b></div>`});document.getElementById('roomList').innerHTML=rm||"<p class='small'>Abhi koi room set nahi</p>";
-let oSeat="";tours.forEach((t,ti)=>{let taken=(t.seats||[]).filter(s=>s.taken);if(taken.length){oSeat+=`<b>${t.title}</b><br>`;taken.forEach((s)=>{let idx=t.seats.indexOf(s);oSeat+=`<div style="background:#222;padding:8px;margin:4px;border-radius:8px">💺 Seat ${idx+1} - ${s.ign} | UID:${s.uid} | ${s.name} | ${s.wa} <button onclick="clearSeat(${ti},${idx})" style="background:red;color:white;border:none;padding:3px 8px;border-radius:6px">Remove</button></div>`});}});document.getElementById('oSeats').innerHTML=oSeat||"Abhi koi seat book nahi";
-let ol="";tours.forEach((t,i)=>{ol+=`<div style="display:flex;justify-content:space-between;background:#222;padding:8px;margin:5px;border-radius:8px"><span>[${catName(t.cat)}] ${t.title}</span><button onclick="delTour(${i})" style="background:red;color:white;border:none;padding:5px 10px;border-radius:8px">Delete</button></div>`});document.getElementById('oList').innerHTML=ol;
-let oww="";winners.forEach((w,i)=>{oww+=`<div style="display:flex;justify-content:space-between;background:#222;padding:8px;margin:5px;border-radius:8px"><span>${w.name} - Rs.${w.amt}</span><button onclick="delWinner(${i})" style="background:red;color:white;border:none;padding:5px 10px;border-radius:8px">Delete</button></div>`});document.getElementById('oWList').innerHTML=oww;
-// MY MATCHES + PENDING - NAYA PAGE
-let myHtml="";let roomHtml2="";let foundMy=false;
-tours.forEach(t=>{(t.seats||[]).forEach((s,i)=>{if(s.taken && s.ign.toLowerCase()==myIgn){foundMy=true;myHtml+=`<div class="myMatchCard">💺 <b>${t.title}</b><br>Seat: <b>${i+1}</b> | IGN: ${s.ign} | UID: ${s.uid}<br>Map: ${t.map} | Time: ${fmt(t.time)}<br>Entry: Rs.${t.entry}</div>`;if(t.roomId) roomHtml2+=`<div class="myMatchCard" style="border-color:#00ff88">🔑 ${t.title}<br>Room ID: <b>${t.roomId}</b><br>Password: <b>${t.roomPass||'No Pass'}</b><br><button onclick="copyRoom('${t.roomId}','${t.roomPass}')" style="background:#00ff88;border:none;padding:8px 14px;border-radius:8px;font-weight:900;margin-top:6px">📋 Copy Karo</button></div>`;}})});
-if(!foundMy) myHtml="<p class='small'>Abhi tumne koi match join nahi kiya! Matches pe jao aur Seat lo!</p>";
-document.getElementById('myMatches').innerHTML=myHtml;
-document.getElementById('myRooms').innerHTML=roomHtml2||"<p class='small'>Abhi koi Room ID nahi hai! Jab Owner Room set karega aur tumne seat li hogi to yahan aayega!</p>";
-let pend="";
-addReqs.forEach(a=>{let cls=a.status.includes('Approved')?'approved':a.status.includes('Rejected')?'rejected':'';pend+=`<div class="pendingCard ${cls}">💰 DEPOSIT - Rs.${a.amt} - Trx: ${a.trx}<br>Status: <b>${a.status}</b></div>`});
-withReqs.forEach(w=>{let cls=w.status.includes('Approved')?'approved':w.status.includes('Rejected')?'rejected':'';pend+=`<div class="pendingCard ${cls}">💸 WITHDRAW - Rs.${w.amt} - ${w.method} ${w.num}<br>Status: <b>${w.status}</b></div>`});
-if(!pend) pend="<p class='small'>Koi pending request nahi hai! Sab clear hai!</p>";
-document.getElementById('myPending').innerHTML=pend;
-refreshRoomSelect();
-updateTimer();
+  let u=getUser(); let bal=u?(u.coins||0):0;
+  document.getElementById('walletBal').innerText=bal+' Coins';
+  document.getElementById('walletBal2').innerText=bal+' Coins';
+  document.getElementById('userInfo').innerText=u?u.name+' - '+u.phone:'Login karo';
+  document.getElementById('myUidBox').innerHTML=u?'<div class="uidBox">🆔 Tumhari UID:<br><b>'+(u.uid||'No UID')+'</b><br><small>Is UID ko yaad rakho, isi se tumhara Data pehchana jayega</small></div>':'';
+  document.getElementById('loginStatus').innerHTML=u?'<p style="color:#00ff88">✅ Logged In: '+u.name+'<br>UID: '+(u.uid||'')+'</p>':'<p style="color:#ffcc00">❌ Logged Out - Login karo</p>';
+  document.getElementById('totalMatches').innerText=matches.length;
+  document.getElementById('totalPlayers').innerText=users.length;
+  let stats=u?getPlayerStats(u.phone):{totalGames:0,totalSpent:0};
+  document.getElementById('myGames').innerText=stats.totalGames;
+  document.getElementById('myStats').innerHTML=u?'<p>🆔 UID: <b>'+(u.uid||'')+'</b><br>👤 Naam: '+u.name+'<br>📱 Phone: '+u.phone+'<br>💰 Coins: <b>'+bal+'</b><br>🎮 Total Games Kheli: <b>'+stats.totalGames+'</b><br>💸 Total Entry Di: '+stats.totalSpent+' Coins</p>':'Login karo taake Stats dekho';
+  let list=matches.filter(m=>currentFilter=='ALL'||m.cat==currentFilter);
+  let html='';
+  list.forEach(m=>{ let booked=bookings.filter(b=>b.matchId==m.id).length; let total=m.cat=='SOLO'?48:m.cat=='DUO'?24:12; html+='<div class="card"><div class="card-img-wrap"><img class="card-img" src="'+m.img+'"><span class="catBadge">'+m.cat+'</span><span class="prizeBadge">🏆 '+m.prize+'</span></div><div class="card-body"><h3>'+m.title+'</h3><p>🕐 '+m.time+'</p><p>💰 Entry: <b>'+m.entry+'</b> | 🎯 Per Kill: '+m.perKill+'</p><p>👥 Seats: <span class="count">'+booked+'/'+total+'</span></p><button class="btn yellow" onclick="openSeat('+m.id+')">🎯 SEAT CHUNO</button></div></div>'; });
+  document.getElementById('matchList').innerHTML=html||'Koi Match Nahi';
+  let my=bookings.filter(b=>u&&b.phone==u.phone);
+  let myHtml=''; my.forEach(b=>{ let m=matches.find(x=>x.id==b.matchId); if(!m) return; myHtml+='<div class="box">🎮 '+m.title+'<br>🪑 Seat: '+b.seat+(m.roomId?'<div style="background:#003300;padding:8px;border-radius:8px;margin-top:6px">🏠 Room: <b>'+m.roomId+'</b> | 🔑 '+m.roomPass+'</div>':'<p class="small">Room ID 10 min pehle aayega</p>')+'</div>'; });
+  document.getElementById('myList').innerHTML=myHtml||'';
+  let hHtml=''; deposits.filter(d=>u&&d.phone==u.phone).forEach(d=>{hHtml+='<div class="hist">➕ Deposit '+d.amount+' - '+d.status+'</div>';}); withdraws.filter(w=>u&&w.phone==u.phone).forEach(w=>{hHtml+='<div class="hist">💸 Withdraw '+w.amount+' - '+w.status+'</div>';});
+  document.getElementById('historyList').innerHTML=hHtml||'Koi history nahi';
+  let sorted=[...users].sort((a,b)=>(b.coins||0)-(a.coins||0)).slice(0,5);
+  let wHtml=''; sorted.forEach(u2=>{ let s=getPlayerStats(u2.phone); wHtml+='<div class="leader"><span>🏆 '+u2.name+'<br><small>'+s.totalGames+' Games</small></span><b>'+(u2.coins||0)+' Coins</b></div>'; });
+  document.getElementById('winnerList').innerHTML=wHtml||'Koi Player nahi';
 }
-function copyRoom(id,pass){try{navigator.clipboard.writeText(`Room ID: ${id} Password: ${pass}`);alert('Room Copy Ho Gaya!');}catch(e){alert(`Room ID: ${id} Pass: ${pass}`);}}
-function updateTimer(){document.querySelectorAll('.count').forEach(el=>{let left=Math.max(0,parseInt(el.getAttribute('data-time'))-Date.now());let h2=Math.floor(left/3600000),mm=Math.floor(left%3600000/60000),ss=Math.floor(left%60000/1000);el.innerText=`⏳ ${String(h2).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')} Baaki`;});}
-function showAdd(){document.getElementById('addBox').style.display='block';document.getElementById('withBox').style.display='none';let el=document.getElementById('addBox');el.scrollIntoView({behavior:'smooth'})}
-function showWithdraw(){document.getElementById('withBox').style.display='block';document.getElementById('addBox').style.display='none';let el=document.getElementById('withBox');el.scrollIntoView({behavior:'smooth'})}
-function addMoneyReq(){let amt=+document.getElementById('addAmt').value,trx=document.getElementById('addTrx').value;let name=localStorage.getItem('mb_ign')||'Guest';if(!amt||!trx){alert('Amount aur Trx likho!');return;}addReqs.unshift({name,amt,trx,status:'Pending'});hist.unshift(`💰 Deposit Request: Rs.${amt} - Pending`);save();render();showPage('pending');let msg=`💰 DEPOSIT Request\nIGN: ${name}\nAmount: Rs.${amt}\nTrx ID: ${trx}`;showWaPopup(msg);}
-function withdrawReq(){let amt=+document.getElementById('withAmt').value,method=document.getElementById('withMethod').value,num=document.getElementById('withNum').value;let name=localStorage.getItem('mb_ign')||'Guest';if(!amt||!num){alert('Amount aur Number likho!');return;}if(amt<100){alert('Min Rs.100');return;}if(amt>balance){alert('Balance kam hai! Balance: Rs.'+balance);return;}balance-=amt;withReqs.unshift({name,amt,method,num,status:'Pending'});hist.unshift(`💸 Withdraw: Rs.${amt} - ${method} ${num} - Pending`);save();render();showPage('pending');let msg=`💸 WITHDRAW\nIGN: ${name}\nAmount: Rs.${amt}\nMethod: ${method}\nNumber: ${num}`;showWaPopup(msg);}
-function approveWith(i){withReqs[i].status='Approved ✅';hist.unshift(`✅ Withdraw Approved: Rs.${withReqs[i].amt}`);save();render();alert('Approve Ho Gaya!');}
-function rejectWith(i){balance+=withReqs[i].amt;withReqs[i].status='Rejected ❌';hist.unshift(`❌ Withdraw Rejected - Rs.${withReqs[i].amt} wapas`);save();render();}
-function approveAdd(i){balance+=addReqs[i].amt;addReqs[i].status='Approved ✅';hist.unshift(`✅ Deposit Approved: +Rs.${addReqs[i].amt}`);save();render();alert('Deposit Approve Ho Gaya!');}
-function rejectAdd(i){addReqs[i].status='Rejected ❌';save();render();}
-function delCoin(i){if(confirm('Delete?')){coinSends.splice(i,1);save();render();}}
-function clearSeat(ti,si){if(confirm('Is seat ko khali karein?')){tours[ti].seats[si]={taken:false,ign:'',uid:'',name:'',wa:''};save();render();if(curTour==ti)renderSeats();}}
-let taps=0,lastTap=0;function tapFooter(){let n=Date.now();if(n-lastTap>2000)taps=0;taps++;lastTap=n;if(taps>=7){taps=0;let p=prompt('OWNER PASSWORD:');if(p==='mobi804'){document.getElementById('ownerPanel').style.display='block';render();}else if(p!==null)alert('Ghalat Password!');}}
-function closeOwner(){document.getElementById('ownerPanel').style.display='none'}
-function addTour(){let title=document.getElementById('oTitle').value,cat=document.getElementById('oCat').value,map=document.getElementById('oMap').value,mode=document.getElementById('oMode').value,time=new Date(document.getElementById('oTime').value).getTime(),entry=+document.getElementById('oEntry').value,prize=+document.getElementById('oPrize').value,perKill=+document.getElementById('oPerKill').value||0,img=document.getElementById('oImg').value||catPic(cat);if(!title||!time||!entry){alert('Title, Time, Entry zaroori!');return;}tours.push({title,cat,map,mode,time,entry,prize,perKill,img,seats:makeSeats(seatCountFor(mode)),roomId:'',roomPass:''});save();render();alert('Tournament Add Ho Gaya!')}
-function delTour(i){if(confirm('Delete?')){tours.splice(i,1);save();render();}}
-function addWinner(){let n=document.getElementById('wName2').value,a=+document.getElementById('wAmt').value;if(!n||!a){alert('Naam aur Amount likho');return;}winners.unshift({name:n,amt:a});balance+=a;totalWin+=a;hist.unshift(`🏆 Prize: +Rs.${a}`);save();render();alert('Winner Add + Rs.'+a+' Wallet Me!');}
-function delWinner(i){winners.splice(i,1);save();render();}
-function resetAll(){if(confirm('Sab delete?')){localStorage.clear();location.reload();}}
-let sIgn=localStorage.getItem('mb_ign');if(sIgn){let el=document.getElementById('ign');if(el)el.value=sIgn;}
-render();checkCoin();updateRefUI();setInterval(updateTimer,1000);
-document.getElementById('resTour').addEventListener('change',refreshResPlayers);
+function searchPlayer(){
+  let q=document.getElementById('searchUid').value.trim().toLowerCase();
+  if(!q) return alert('UID / Phone / Naam likho!');
+  let found=users.filter(u=> (u.uid||'').toLowerCase().includes(q) || (u.phone||'').includes(q) || (u.name||'').toLowerCase().includes(q));
+  if(found.length==0) return document.getElementById('searchResult').innerHTML='<p style="color:#ff3333">❌ Koi Player nahi mila!</p>';
+  let html='';
+  found.forEach(u=>{
+    let s=getPlayerStats(u.phone);
+    let myW=withdraws.filter(w=>w.phone==u.phone);
+    let myD=deposits.filter(d=>d.phone==u.phone);
+    html+='<div class="box" style="border:2px solid #00ff88"><h3>👤 '+u.name+'</h3><p style="text-align:left">🆔 UID: <b>'+(u.uid||'No UID')+'</b><br>📱 Phone: '+u.phone+'<br>📧 Email: '+(u.email||'-')+'<br>💰 Coins: <b>'+(u.coins||0)+'</b><br>🎮 Total Games: <b>'+s.totalGames+'</b><br>💸 Total Entry: '+s.totalSpent+' Coins<br>➕ Total Deposits: '+myD.length+'<br>💸 Total Withdraws: '+myW.length+'<br>📅 Joined: '+(u.createdAt||'-')+'</p><button class="btn green" style="width:auto;padding:8px 14px" onclick="addCoinsToUser(\''+u.phone+'\')">➕ Coins Do</button> <button class="btn red" style="width:auto;padding:8px 14px" onclick="removeCoinsFromUser(\''+u.phone+'\')">➖ Coins Kato</button></div>';
+  });
+  document.getElementById('searchResult').innerHTML=html;
+}
+function addCoinsToUser(phone){ let amt=parseInt(prompt('Kitne Coins dene hain?')); if(!amt) return; let u=users.find(x=>x.phone==phone); u.coins=(u.coins||0)+amt; if(currentUser&&currentUser.phone==phone) currentUser=u; saveAll(); renderOwner(); render(); searchPlayer(); alert(amt+' Coins de diye!'); }
+function removeCoinsFromUser(phone){ let amt=parseInt(prompt('Kitne Coins katne hain?')); if(!amt) return; let u=users.find(x=>x.phone==phone); u.coins=Math.max(0,(u.coins||0)-amt); if(currentUser&&currentUser.phone==phone) currentUser=u; saveAll(); renderOwner(); render(); searchPlayer(); alert(amt+' Coins kaat liye!'); }
+function renderOwner(){
+  let dHtml=''; deposits.forEach(d=>{ dHtml+='<div class="hist">👤 '+d.name+' ('+d.phone+')<br>🆔 UID: '+(d.uid||'-')+'<br>💰 '+d.amount+' | Trx: '+d.trx+'<br>Status: <b>'+d.status+'</b><br>'+(d.status=='PENDING'?'<button class="btn green" style="width:auto;padding:8px 14px" onclick="approveDeposit('+d.id+')">✅ APPROVE</button> <button class="btn red" style="width:auto;padding:8px 14px" onclick="rejectDeposit('+d.id+')">❌ REJECT</button>':'')+'</div>'; });
+  document.getElementById('depositList').innerHTML=dHtml||'Koi Deposit nahi';
+  let wHtml=''; withdraws.forEach(w=>{ wHtml+='<div class="hist">👤 '+w.name+' ('+w.phone+')<br>🆔 UID: '+(w.uid||'-')+'<br>💸 '+w.amount+' | '+w.number+'<br>Status: <b>'+w.status+'</b><br>'+(w.status=='PENDING'?'<button class="btn green" style="width:auto;padding:8px 14px" onclick="approveWithdraw('+w.id+')">✅ APPROVE + COIN KATO</button> <button class="btn red" style="width:auto;padding:8px 14px" onclick="rejectWithdraw('+w.id+')">❌ REJECT</button>':'')+'</div>'; });
+  document.getElementById('withdrawList').innerHTML=wHtml||'Koi Withdraw nahi';
+  let pHtml=''; users.forEach(u=>{ let s=getPlayerStats(u.phone); pHtml+='<div class="leader" style="display:block;text-align:left"><b>'+u.name+'</b> - '+(u.coins||0)+' Coins<br><small>🆔 '+(u.uid||'No UID')+'<br>📱 '+u.phone+'<br>🎮 Games: '+s.totalGames+' | 💸 Spent: '+s.totalSpent+'</small><br><button class="btn yellow" style="width:auto;padding:6px 12px;font-size:12px" onclick="document.getElementById(\'searchUid\').value=\''+(u.uid||u.phone)+'\';searchPlayer()">🔍 FULL DETAIL DEKHO</button></div>'; });
+  document.getElementById('allPlayers').innerHTML=pHtml||'Koi Player nahi';
+  let rHtml=''; matches.forEach(m=>{ rHtml+='<div class="hist">🎮 '+m.title+'<br><input id="roomId_'+m.id+'" placeholder="Room ID" value="'+(m.roomId||'')+'" style="width:40%"><input id="roomPass_'+m.id+'" placeholder="Password" value="'+(m.roomPass||'')+'" style="width:40%"><button class="btn yellow" style="width:auto;padding:8px 14px" onclick="saveRoom('+m.id+')">💾 SAVE</button></div>'; });
+  document.getElementById('roomList').innerHTML=rHtml;
+  let winHtml=''; matches.forEach(m=>{ winHtml+='<div class="hist">🎮 '+m.title+'<br><input id="win_'+m.id+'" placeholder="Winner Phone"><button class="btn yellow" style="width:auto;padding:8px 14px" onclick="declareWinner('+m.id+')">🏆 WINNER</button></div>'; });
+  document.getElementById('winnerDeclare').innerHTML=winHtml;
+  let omHtml=''; matches.forEach(m=>{ omHtml+='<div class="hist">🎮 '+m.title+' <button class="btn red" style="width:auto;padding:6px 12px;float:right" onclick="deleteMatch('+m.id+')">DELETE</button></div>'; });
+  document.getElementById('ownerMatches').innerHTML=omHtml;
+}
+function approveDeposit(id){ let d=deposits.find(x=>x.id==id); if(!d||d.status=='APPROVED') return; d.status='APPROVED'; let u=users.find(x=>x.phone==d.phone); if(u){u.coins=(u.coins||0)+d.amount; if(currentUser&&currentUser.phone==u.phone) currentUser=u;} saveAll(); renderOwner(); render(); alert('Deposit Approved!'); }
+function rejectDeposit(id){ let d=deposits.find(x=>x.id==id); if(d){d.status='REJECTED';saveAll();renderOwner();render();} }
+function approveWithdraw(id){
+  let req=withdraws.find(x=>x.id==id); if(!req) return;
+  if(req.status=='APPROVED') return alert('Pehle se Approved hai! Dobara Coin nahi katenge.');
+  let u=users.find(x=>x.phone==req.phone); if(!u) return alert('User nahi mila!');
+  if((u.coins||0)<req.amount) return alert('Iske paas itne Coins nahi! Balance: '+(u.coins||0));
+  u.coins=u.coins-req.amount; if(currentUser&&currentUser.phone==u.phone) currentUser=u;
+  req.status='APPROVED'; saveAll(); renderOwner(); render(); alert('✅ APPROVED! '+req.amount+' Coins Kat Gaye! Bacha: '+u.coins);
+}
+function rejectWithdraw(id){ let w=withdraws.find(x=>x.id==id); if(w){w.status='REJECTED';saveAll();renderOwner();render();} }
+function saveRoom(id){ let m=matches.find(x=>x.id==id); if(m){m.roomId=document.getElementById('roomId_'+id).value; m.roomPass=document.getElementById('roomPass_'+id).value; saveAll(); renderOwner(); render(); alert('Room Save!');} }
+function declareWinner(id){ let m=matches.find(x=>x.id==id); let ph=document.getElementById('win_'+id).value.trim(); let u=users.find(x=>x.phone==ph||x.name==ph); if(!u) return alert('User nahi mila!'); u.coins=(u.coins||0)+m.prize; if(currentUser&&currentUser.phone==u.phone) currentUser=u; saveAll(); renderOwner(); render(); alert('🏆 '+u.name+' ko '+m.prize+' mil gaya!'); }
+function deleteMatch(id){ if(confirm('Delete?')){ matches=matches.filter(x=>x.id!=id); saveAll(); renderOwner(); render(); } }
+function resetAll(){ if(confirm('SAB DELETE?')){ localStorage.clear(); location.reload(); } }
+render();
 </script>
 </body>
 </html>
