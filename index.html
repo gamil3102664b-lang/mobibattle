@@ -40,7 +40,8 @@ input,select{width:92%;padding:12px;margin:6px;border-radius:10px;border:1px sol
 .seat.selected{background:#ffcc00;border-color:#ffcc00;color:black;transform:scale(1.05)}
 .seatForm{background:#1a1a1a;padding:14px;border-radius:15px;border:2px solid #ffcc00;margin-top:10px}
 #seatModal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);z-index:1000;overflow:auto;padding:12px}
-.ownerBtn{background:#1e1e1e!important;border:1px solid #ffcc00!important}
+#hp{font-size:24px;color:#00ff88}
+#enemy{font-size:80px}
 </style>
 </head>
 <body>
@@ -53,6 +54,16 @@ input,select{width:92%;padding:12px;margin:6px;border-radius:10px;border:1px sol
 <button class="btn yellow" onclick="scrollToId('tour')">🔥 JOIN NOW - Rs.50</button>
 <button class="btn green" onclick="openWA()">WhatsApp - 03218427826</button>
 <div class="stats"><div class="stat"><b>5,200+</b><br>Players</div><div class="stat"><b>Rs. 8.5L+</b><br>Prize</div><div class="stat"><b>30 Min</b><br>Payment</div></div>
+</div>
+
+<div class="box" style="border:2px solid #ff2d55">
+<h2>⚔️ MOBIBATTLE - MINI GAME ⚔️</h2>
+<div id="enemy">👹</div>
+<h2>Enemy HP: <span id="hp">100</span></h2>
+<p>Score: <span id="score">0</span></p>
+<button class="btn red" onclick="attack()">🔥 ATTACK KARO!</button>
+<p id="msg">Enemy ko haro!</p>
+<p class="small">1. ATTACK dabao<br>2. Enemy ki HP kam karo<br>3. 100 Score banao aur Jeeto!</p>
 </div>
 
 <div class="wallet">
@@ -106,7 +117,6 @@ input,select{width:92%;padding:12px;margin:6px;border-radius:10px;border:1px sol
 <div class="footer" onclick="tapFooter()"><b>MOBI BATTLE PK</b><br>WhatsApp: 03218427826 | YouTube: Mobi Battle PK<br><br><span>© 2026 Mobi Battle PK</span><br><span class="small">Owner? Footer pe 5 baar dabao</span></div>
 <div class="wa" onclick="openWA()">💬</div>
 
-<!-- SEAT MODAL -->
 <div id="seatModal">
 <div class="box" style="margin-top:20px">
 <h2 id="seatTitle" style="color:#ffcc00">Seat Chunain</h2>
@@ -125,7 +135,7 @@ input,select{width:92%;padding:12px;margin:6px;border-radius:10px;border:1px sol
 
 <div id="ownerPanel">
 <h2 style="color:#ffcc00">👑 OWNER PANEL</h2>
-<p class="small">Pass: mobi804</p>
+<p class="small">Pass: 31026</p>
 <button class="btn green" onclick="closeOwner()">❌ Band Karo</button>
 <div class="box"><h3>💸 Withdraw Requests</h3><div id="oWithdraw"></div></div>
 <div class="box"><h3>➕ Add Money Requests</h3><div id="oAdd"></div></div>
@@ -145,7 +155,7 @@ input,select{width:92%;padding:12px;margin:6px;border-radius:10px;border:1px sol
 
 <script>
 let WA="03218427826";
-let OWNER_PASS="mobi804";
+let OWNER_PASS="31026";
 let balance=parseInt(localStorage.getItem('mb_bal')||'0');
 let hist=JSON.parse(localStorage.getItem('mb_hist')||'[]');
 let withReqs=JSON.parse(localStorage.getItem('mb_with')||'[]');
@@ -162,6 +172,20 @@ let tours=JSON.parse(localStorage.getItem('mb_tours')||'null')||[
 ];
 let winners=JSON.parse(localStorage.getItem('mb_winners')||'null')||[{name:"Mobi YT",amt:1000},{name:"Ayan FF",amt:800}];
 let leaders=[{n:"Mobi YT",w:12,p:18500},{n:"Ayan FF",w:9,p:14200},{n:"Hamza King",w:8,p:11000},{n:"Usman Pro",w:7,p:9800},{n:"Ali Gamer",w:6,p:8400}];
+
+let hp=100, score=0;
+function attack(){
+hp-=10; score+=10;
+document.getElementById('hp').innerText=hp;
+document.getElementById('score').innerText=score;
+if(hp<=0){
+document.getElementById('msg').innerText="🎉 JEET GAYE! +Rs.10 Wallet Me!";
+hp=100; balance+=10; totalWin+=10; hist.unshift("🎮 Game Jeeta: +Rs.10");
+save(); render();
+}else{
+document.getElementById('msg').innerText="Boom! Zabardast Attack!";
+}
+}
 
 function save(){localStorage.setItem('mb_tours',JSON.stringify(tours));localStorage.setItem('mb_winners',JSON.stringify(winners));localStorage.setItem('mb_bal',balance);localStorage.setItem('mb_hist',JSON.stringify(hist));localStorage.setItem('mb_with',JSON.stringify(withReqs));localStorage.setItem('mb_add',JSON.stringify(addReqs));localStorage.setItem('mb_win',totalWin);localStorage.setItem('mb_play',totalPlay);}
 function fmt(t){return new Date(t).toLocaleString('en-PK',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});}
@@ -193,8 +217,6 @@ function scrollToId(id){document.getElementById(id).scrollIntoView({behavior:'sm
 function showAdd(){document.getElementById('addBox').style.display='block';document.getElementById('withBox').style.display='none';scrollToId('addBox')}
 function showWithdraw(){document.getElementById('withBox').style.display='block';document.getElementById('addBox').style.display='none';scrollToId('withBox')}
 function openWA(){window.open('https://wa.me/92'+WA.substring(1),'_blank')}
-function joinTour(i){openSeats(i)}
-
 function openSeats(i){
 curTour=i;selSeat=-1;
 let t=tours[i];
@@ -232,7 +254,6 @@ save();render();closeSeat();
 alert('✅ SEAT BOOKED!\n'+t.title+'\nSeat: '+(selSeat+1)+'\nIGN: '+ign+'\nUID: '+uid);
 window.open('https://wa.me/92'+WA.substring(1)+'?text='+encodeURIComponent(`Register\nIGN: ${ign}\nUID: ${uid}\nWhatsApp: ${wa}\nTournament: ${t.title} - ${t.map}\nSeat: ${selSeat+1}\nEntry Wallet se kat gaya`),'_blank');
 }
-
 function addMoneyReq(){let amt=+document.getElementById('addAmt').value,trx=document.getElementById('addTrx').value;let name=document.getElementById('ign').value||'Guest';if(!amt||!trx){alert('Amount aur Trx ID likho!');return;}addReqs.unshift({name,amt,trx,status:'Pending',time:Date.now()});hist.unshift(`➕ Add Request: Rs.${amt} - Pending`);save();render();alert('Request Bhej Di!');window.open('https://wa.me/92'+WA.substring(1)+'?text='+encodeURIComponent(`Add Money Request\nIGN: ${name}\nAmount: Rs.${amt}\nTrx: ${trx}`),'_blank')}
 function withdrawReq(){let amt=+document.getElementById('withAmt').value,method=document.getElementById('withMethod').value,num=document.getElementById('withNum').value;let name=document.getElementById('ign').value||'Guest';if(!amt||!num){alert('Amount aur Number likho!');return;}if(amt<100){alert('Min Withdraw Rs.100 hai!');return;}if(amt>balance){alert('Wallet me itne paise nahi! Balance: Rs.'+balance);return;}balance-=amt;withReqs.unshift({name,amt,method,num,status:'Pending',time:Date.now()});hist.unshift(`💸 Withdraw: Rs.${amt} - ${method} ${num} - Pending`);save();render();alert('Withdraw Request Bhej Di! 30 Min me paisa aa jayega!');window.open('https://wa.me/92'+WA.substring(1)+'?text='+encodeURIComponent(`Withdraw Request\nIGN: ${name}\nAmount: Rs.${amt}\nMethod: ${method}\nNumber: ${num}`),'_blank')}
 function approveWith(i){withReqs[i].status='Approved ✅';hist.unshift(`✅ Withdraw Approved: Rs.${withReqs[i].amt}`);save();render();alert('Withdraw Approve Ho Gaya! Ab JazzCash se paisa bhej do!')}
@@ -240,7 +261,6 @@ function rejectWith(i){let amt=withReqs[i].amt;balance+=amt;withReqs[i].status='
 function approveAdd(i){let amt=addReqs[i].amt;balance+=amt;addReqs[i].status='Approved ✅';hist.unshift(`✅ Add Approved: +Rs.${amt}`);save();render();alert('Balance Add Ho Gaya! +Rs.'+amt)}
 function rejectAdd(i){addReqs[i].status='Rejected ❌';save();render();}
 function register(){let ign=document.getElementById('ign').value,uid=document.getElementById('uid').value,wa=document.getElementById('waNum').value;if(!ign||!uid||!wa){alert('Sab bharo!');return;}let idx=document.getElementById('selTour').value;openSeats(idx);}
-
 let taps=0,lastTap=0;function tapFooter(){let n=Date.now();if(n-lastTap>2000)taps=0;taps++;lastTap=n;if(taps>=5){taps=0;let p=prompt('OWNER PASSWORD:');if(p===OWNER_PASS){document.getElementById('ownerPanel').style.display='block';render();}else if(p!==null)alert('Ghalat Password!');}}
 function closeOwner(){document.getElementById('ownerPanel').style.display='none'}
 function addTour(){let title=document.getElementById('oTitle').value,map=document.getElementById('oMap').value,mode=document.getElementById('oMode').value,time=new Date(document.getElementById('oTime').value).getTime(),entry=+document.getElementById('oEntry').value,prize=+document.getElementById('oPrize').value,perKill=+document.getElementById('oPerKill').value||0,img=document.getElementById('oImg').value,room=document.getElementById('oRoom').value,roomPass=document.getElementById('oRoomPass').value;if(!title||!time||!entry){alert('Title, Time, Entry zaroori!');return;}tours.push({title,map,mode,time,entry,prize,perKill,img,room,roomPass,seats:makeSeats(48)});save();render();alert('Tournament Add Ho Gaya!')}
@@ -252,4 +272,4 @@ let savedIgn=localStorage.getItem('mb_ign');if(savedIgn)document.getElementById(
 render();setInterval(render,1000);
 </script>
 </body>
-  </html>
+</html>
