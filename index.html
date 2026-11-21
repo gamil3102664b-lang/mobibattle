@@ -256,6 +256,79 @@ input,select,textarea{width:92%;padding:12px;margin:6px;border-radius:12px;borde
 <button class="btn red" onclick="resetAll()">⚠️ SAB DATA DELETE KARO</button>
 </div>
 
+<!-- ===== FIREBASE ADDED - Baaki sab same hai ===== -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+// YAHAN APNA FIREBASE CONFIG DAAALO - Firebase Console > Project Settings > Your apps > Web se milega
+const firebaseConfig = {
+  apiKey: "PASTE-YOUR-API-KEY-HERE",
+  authDomain: "mobibattle-pk.firebaseapp.com",
+  databaseURL: "https://mobibattle-pk-default-rtdb.firebaseio.com",
+  projectId: "mobibattle-pk",
+  storageBucket: "mobibattle-pk.appspot.com",
+  messagingSenderId: "PASTE-YOUR-SENDER-ID-HERE",
+  appId: "PASTE-YOUR-APP-ID-HERE"
+};
+let firebaseReady = false;
+let db = null;
+try{
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+  firebaseReady = true;
+}catch(e){ console.log("Firebase config abhi poora nahi hai, LocalStorage se chalega"); }
+
+let isSyncingFromFirebase = false;
+function pushToFirebase(){
+  if(!firebaseReady || !db) return;
+  if(isSyncingFromFirebase) return;
+  db.ref('mobibattle').set({
+    users: users,
+    matches: matches,
+    deposits: deposits,
+    withdraws: withdraws,
+    bookings: bookings,
+    passes: passes,
+    transfers: transfers,
+    noticeText: noticeText,
+    groupLink: WHATSAPP_GROUP_LINK,
+    supportNum: SUPPORT_NUMBER
+  });
+}
+function pullFromFirebase(data){
+  if(!data) return;
+  isSyncingFromFirebase = true;
+  if(data.users) users = data.users;
+  if(data.matches) matches = data.matches;
+  if(data.deposits) deposits = data.deposits;
+  if(data.withdraws) withdraws = data.withdraws;
+  if(data.bookings) bookings = data.bookings;
+  if(data.passes) passes = data.passes;
+  if(data.transfers) transfers = data.transfers;
+  if(data.noticeText) { noticeText = data.noticeText; localStorage.setItem('mobi_notice', noticeText); }
+  if(data.groupLink) { WHATSAPP_GROUP_LINK = data.groupLink; localStorage.setItem('mobi_group_link', WHATSAPP_GROUP_LINK); }
+  if(data.supportNum) { SUPPORT_NUMBER = data.supportNum; localStorage.setItem('mobi_support_num', SUPPORT_NUMBER); }
+  // LocalStorage bhi update taake offline bhi chale
+  localStorage.setItem('mobi_users', JSON.stringify(users));
+  localStorage.setItem('mobi_matches', JSON.stringify(matches));
+  localStorage.setItem('mobi_deposits', JSON.stringify(deposits));
+  localStorage.setItem('mobi_withdraws', JSON.stringify(withdraws));
+  localStorage.setItem('mobi_bookings', JSON.stringify(bookings));
+  localStorage.setItem('mobi_pass', JSON.stringify(passes));
+  localStorage.setItem('mobi_transfers', JSON.stringify(transfers));
+  render();
+  if(document.getElementById('ownerPanel').style.display=='block') renderOwner();
+  isSyncingFromFirebase = false;
+}
+if(firebaseReady){
+  db.ref('mobibattle').on('value', (snap)=>{
+    let val = snap.val();
+    if(val){ pullFromFirebase(val); }
+    else { pushToFirebase(); }
+  });
+}
+</script>
+
 <script>
 let WHATSAPP_GROUP_LINK = localStorage.getItem('mobi_group_link') || 'https://chat.whatsapp.com/YOUR_GROUP_LINK';
 let SUPPORT_NUMBER = localStorage.getItem('mobi_support_num') || '923218427826';
@@ -275,7 +348,8 @@ let passes=JSON.parse(localStorage.getItem('mobi_pass')||'{}');
 let transfers=JSON.parse(localStorage.getItem('mobi_transfers')||'[]');
 let noticeText=localStorage.getItem('mobi_notice')||'Room ID admin khud dega - Improve Skills • Fair Play • Koi hack nahi • Aaj raat 8 PM Mega Match hai!';
 if(matches.length==0){ matches=[{id:1,title:'SOLO - Evening Blast',cat:'SOLO',time:'Aaj 8:00 PM',entry:50,prize:500,perKill:10,map:'Bermuda',img:'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800',roomId:'',roomPass:''},{id:2,title:'DUO - Night Hunters',cat:'DUO',time:'Aaj 10:00 PM',entry:100,prize:1200,perKill:15,map:'Purgatory',img:'https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=800',roomId:'',roomPass:''},{id:3,title:'SQUAD - Champions Cup',cat:'SQUAD',time:'Kal 7:00 PM',entry:200,prize:5000,perKill:20,map:'Bermuda',img:'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800',roomId:'',roomPass:''},{id:4,title:'LONE WOLF - 1v1 King',cat:'LONE WOLF',time:'Aaj 9:00 PM',entry:30,prize:300,perKill:10,map:'Craftland',img:'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=800',roomId:'',roomPass:''}]; saveAll(); }
-function saveAll(){ localStorage.setItem('mobi_users',JSON.stringify(users)); localStorage.setItem('mobi_matches',JSON.stringify(matches)); localStorage.setItem('mobi_deposits',JSON.stringify(deposits)); localStorage.setItem('mobi_withdraws',JSON.stringify(withdraws)); localStorage.setItem('mobi_bookings',JSON.stringify(bookings)); localStorage.setItem('mobi_pass',JSON.stringify(passes)); localStorage.setItem('mobi_transfers',JSON.stringify(transfers)); if(currentUser) localStorage.setItem('mobi_current',JSON.stringify(currentUser)); }
+// ORIGINAL saveAll + FIREBASE PUSH - Setting same, sirf sync add kiya
+function saveAll(){ localStorage.setItem('mobi_users',JSON.stringify(users)); localStorage.setItem('mobi_matches',JSON.stringify(matches)); localStorage.setItem('mobi_deposits',JSON.stringify(deposits)); localStorage.setItem('mobi_withdraws',JSON.stringify(withdraws)); localStorage.setItem('mobi_bookings',JSON.stringify(bookings)); localStorage.setItem('mobi_pass',JSON.stringify(passes)); localStorage.setItem('mobi_transfers',JSON.stringify(transfers)); if(currentUser) localStorage.setItem('mobi_current',JSON.stringify(currentUser)); if(typeof pushToFirebase==='function') pushToFirebase(); }
 function getUser(){ if(!currentUser) return null; return users.find(x=>x.phone==currentUser.phone) || currentUser; }
 function getPlayerStats(phone){ let b=bookings.filter(x=>x.phone==phone); return {totalGames:b.length,totalSpent:b.reduce((s,x)=>s+x.entry,0)}; }
 function showPage(id,btn){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.getElementById(id).classList.add('active'); if(btn){document.querySelectorAll('.navBtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');} window.scrollTo(0,0); render(); }
@@ -350,10 +424,10 @@ function rejectWithdraw(id){ let w=withdraws.find(x=>x.id==id); if(w){w.status='
 function saveRoom(id){ let m=matches.find(x=>x.id==id); if(m){m.roomId=document.getElementById('roomId_'+id).value; m.roomPass=document.getElementById('roomPass_'+id).value; saveAll(); renderOwner(); render(); alert('Room Save!');} }
 function declareWinner(id){ let m=matches.find(x=>x.id==id); let q=document.getElementById('win_'+id).value.trim(); let u=users.find(x=>(x.ffUid||x.uid)==q||x.phone==q||x.name==q); if(!u) return alert('User nahi mila!'); u.coins=(u.coins||0)+m.prize; if(currentUser&&currentUser.phone==u.phone) currentUser=u; saveAll(); renderOwner(); render(); alert('🏆 '+u.name+' ko '+m.prize+' Coins mil gaye!'); }
 function deleteMatch(id){ if(confirm('Delete?')){ matches=matches.filter(x=>x.id!=id); saveAll(); renderOwner(); render(); } }
-function resetAll(){ if(confirm('SAB DELETE?')){ localStorage.clear(); location.reload(); } }
+function resetAll(){ if(confirm('SAB DELETE?')){ localStorage.clear(); if(firebaseReady && db) db.ref('mobibattle').remove(); location.reload(); } }
 function openWhatsApp(){document.getElementById('waPopup').style.display='block';}
 function goWhatsApp(){window.open('https://wa.me/'+SUPPORT_NUMBER+'?text='+encodeURIComponent(document.getElementById('waText').value),'_blank');}
 render();
 </script>
 </body>
-  </html>
+</html>
