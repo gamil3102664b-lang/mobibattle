@@ -220,6 +220,16 @@ input,select,textarea{width:92%;padding:12px;margin:6px;border-radius:12px;borde
 <button class="btn green" onclick="doLogin()">🔐 LOGIN KARO</button>
 <button class="btn red" onclick="doLogout()">🚪 LOGOUT</button>
 <div id="loginStatus"></div>
+<p class="small" id="syncStatus" style="color:#00ff88">🟢 No API Chahiye - Auto Sync ON Hai</p>
+<div class="box" style="background:#002a12;border:1px solid #00ff88">
+<h3 style="color:#00ff88">🔗 DOST KO JOIN KARANE KA TAREEKA</h3>
+<p class="small" style="color:#fff">Tumhara Room Code ye hai, dost ko bhejo. Dost is code ko apne mobile me daalega to sab ka data ek ho jayega:</p>
+<input id="roomCodeInput" placeholder="Room Code yahan aayega" readonly>
+<button class="btn green" onclick="copyRoomCode()">📋 CODE COPY KARO - DOST KO BHEJO</button>
+<p class="small">Agar dost ke paas code hai to neeche daalo:</p>
+<input id="joinCodeInput" placeholder="Dost ka Room Code yahan paste karo">
+<button class="btn yellow" onclick="joinRoomCode()">🔗 IS ROOM ME JOIN HO JAO</button>
+</div>
 </div>
 <div class="box"><h3>📊 MERI STATS</h3><div id="myStats"></div></div>
 <div id="myList"></div>
@@ -246,7 +256,7 @@ input,select,textarea{width:92%;padding:12px;margin:6px;border-radius:12px;borde
 <div class="box ownerBox"><h3>🔗 WHATSAPP GROUP LINK BADLO</h3><input id="oGroupLink" placeholder="WhatsApp Group Link yahan paste karo"><button class="btn green" onclick="saveGroupLink()">💾 GROUP LINK SAVE KARO</button><p class="small" id="currentGroupLink"></p></div>
 <div class="box ownerBox"><h3>🎧 CUSTOMER SERVICE NUMBER</h3><input id="oSupportNum" placeholder="WhatsApp Number - 923218427826"><button class="btn green" onclick="saveSupportNum()">💾 NUMBER SAVE KARO</button><p class="small" id="currentSupportNum"></p></div>
 <div class="box ownerBox"><h3>🔍 PLAYER SEARCH - FREE FIRE UID SE</h3><div class="searchBox"><input id="searchUid" placeholder="Free Fire UID ya Phone ya Naam likho"><button class="btn yellow" onclick="searchPlayer()">🔍 SEARCH KARO</button><div id="searchResult"></div></div></div>
-<div class="box ownerBox"><h3>👥 ALL PLAYERS</h3><div id="allPlayers"></div></div>
+<div class="box ownerBox"><h3>👥 ALL PLAYERS <span style="color:#00ff88">● LIVE</span></h3><p class="small">Dost login karega to yahan khud aa jayega, refresh ki zaroorat nahi</p><div id="allPlayers"></div></div>
 <div class="box ownerBox"><h3>➕ NAYA TOURNAMENT</h3><input id="oTitle" placeholder="Match Title"><select id="oCat"><option>SOLO</option><option>DUO</option><option>SQUAD</option><option>LONE WOLF</option></select><input id="oTime" placeholder="Time - Aaj 8 PM"><input id="oEntry" type="number" placeholder="Entry Fee - Coins me"><input id="oPrize" type="number" placeholder="Prize - Coins me"><input id="oPerKill" type="number" placeholder="Per Kill - Coins me"><input id="oMap" placeholder="Map - Bermuda"><button class="btn purple" onclick="addMatch()">➕ MATCH ADD KARO</button></div>
 <div class="box ownerBox"><h3>🏠 ROOM ID / PASSWORD</h3><div id="roomList"></div></div>
 <div class="box ownerBox"><h3>💰 DEPOSIT</h3><div id="depositList"></div></div>
@@ -256,77 +266,77 @@ input,select,textarea{width:92%;padding:12px;margin:6px;border-radius:12px;borde
 <button class="btn red" onclick="resetAll()">⚠️ SAB DATA DELETE KARO</button>
 </div>
 
-<!-- ===== FIREBASE ADDED - Baaki sab same hai ===== -->
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script>
-// YAHAN APNA FIREBASE CONFIG DAAALO - Firebase Console > Project Settings > Your apps > Web se milega
-const firebaseConfig = {
-  apiKey: "PASTE-YOUR-API-KEY-HERE",
-  authDomain: "mobibattle-pk.firebaseapp.com",
-  databaseURL: "https://mobibattle-pk-default-rtdb.firebaseio.com",
-  projectId: "mobibattle-pk",
-  storageBucket: "mobibattle-pk.appspot.com",
-  messagingSenderId: "PASTE-YOUR-SENDER-ID-HERE",
-  appId: "PASTE-YOUR-APP-ID-HERE"
-};
-let firebaseReady = false;
-let db = null;
-try{
-  firebase.initializeApp(firebaseConfig);
-  db = firebase.database();
-  firebaseReady = true;
-}catch(e){ console.log("Firebase config abhi poora nahi hai, LocalStorage se chalega"); }
+// ===== NO API SYSTEM - Bina Chabi Ke Sync =====
+// Ye system npoint.io use karta hai, is me koi API KEY nahi chahiye
+let SYNC_ID = localStorage.getItem('mobi_sync_id') || 'mobibattlepk12345';
+localStorage.setItem('mobi_sync_id', SYNC_ID);
+let lastSyncTime = parseInt(localStorage.getItem('mobi_lastSync')||'0');
+let isSyncing = false;
 
-let isSyncingFromFirebase = false;
-function pushToFirebase(){
-  if(!firebaseReady || !db) return;
-  if(isSyncingFromFirebase) return;
-  db.ref('mobibattle').set({
-    users: users,
-    matches: matches,
-    deposits: deposits,
-    withdraws: withdraws,
-    bookings: bookings,
-    passes: passes,
-    transfers: transfers,
-    noticeText: noticeText,
-    groupLink: WHATSAPP_GROUP_LINK,
-    supportNum: SUPPORT_NUMBER
-  });
+async function pushToCloud(){
+  if(isSyncing) return;
+  try{
+    lastSyncTime = Date.now();
+    localStorage.setItem('mobi_lastSync', lastSyncTime);
+    let data = {users, matches, deposits, withdraws, bookings, passes, transfers, noticeText, groupLink: WHATSAPP_GROUP_LINK, supportNum: SUPPORT_NUMBER, lastUpdated: lastSyncTime};
+    // npoint pe save karo
+    await fetch('https://api.npoint.io/v1/'+SYNC_ID, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
+  }catch(e){ console.log('Sync fail, local me save hai', e); }
 }
-function pullFromFirebase(data){
-  if(!data) return;
-  isSyncingFromFirebase = true;
-  if(data.users) users = data.users;
-  if(data.matches) matches = data.matches;
-  if(data.deposits) deposits = data.deposits;
-  if(data.withdraws) withdraws = data.withdraws;
-  if(data.bookings) bookings = data.bookings;
-  if(data.passes) passes = data.passes;
-  if(data.transfers) transfers = data.transfers;
-  if(data.noticeText) { noticeText = data.noticeText; localStorage.setItem('mobi_notice', noticeText); }
-  if(data.groupLink) { WHATSAPP_GROUP_LINK = data.groupLink; localStorage.setItem('mobi_group_link', WHATSAPP_GROUP_LINK); }
-  if(data.supportNum) { SUPPORT_NUMBER = data.supportNum; localStorage.setItem('mobi_support_num', SUPPORT_NUMBER); }
-  // LocalStorage bhi update taake offline bhi chale
-  localStorage.setItem('mobi_users', JSON.stringify(users));
-  localStorage.setItem('mobi_matches', JSON.stringify(matches));
-  localStorage.setItem('mobi_deposits', JSON.stringify(deposits));
-  localStorage.setItem('mobi_withdraws', JSON.stringify(withdraws));
-  localStorage.setItem('mobi_bookings', JSON.stringify(bookings));
-  localStorage.setItem('mobi_pass', JSON.stringify(passes));
-  localStorage.setItem('mobi_transfers', JSON.stringify(transfers));
-  render();
-  if(document.getElementById('ownerPanel').style.display=='block') renderOwner();
-  isSyncingFromFirebase = false;
+async function pullFromCloud(){
+  if(isSyncing) return;
+  try{
+    let res = await fetch('https://api.npoint.io/v1/'+SYNC_ID);
+    if(!res.ok) return;
+    let data = await res.json();
+    if(!data || !data.users) return;
+    if(data.lastUpdated && data.lastUpdated < lastSyncTime){ pushToCloud(); return; }
+    isSyncing = true;
+    if(data.users) users = data.users;
+    if(data.matches) matches = data.matches;
+    if(data.deposits) deposits = data.deposits;
+    if(data.withdraws) withdraws = data.withdraws;
+    if(data.bookings) bookings = data.bookings;
+    if(data.passes) passes = data.passes;
+    if(data.transfers) transfers = data.transfers;
+    if(data.lastUpdated) { lastSyncTime = data.lastUpdated; localStorage.setItem('mobi_lastSync', lastSyncTime); }
+    if(data.noticeText) noticeText = data.noticeText;
+    if(data.groupLink) WHATSAPP_GROUP_LINK = data.groupLink;
+    if(data.supportNum) SUPPORT_NUMBER = data.supportNum;
+    if(currentUser){
+      let fresh = users.find(x=>x.phone==currentUser.phone);
+      if(fresh) currentUser = fresh;
+      localStorage.setItem('mobi_current', JSON.stringify(currentUser));
+    }
+    localStorage.setItem('mobi_users', JSON.stringify(users));
+    localStorage.setItem('mobi_matches', JSON.stringify(matches));
+    localStorage.setItem('mobi_deposits', JSON.stringify(deposits));
+    localStorage.setItem('mobi_withdraws', JSON.stringify(withdraws));
+    localStorage.setItem('mobi_bookings', JSON.stringify(bookings));
+    localStorage.setItem('mobi_pass', JSON.stringify(passes));
+    localStorage.setItem('mobi_transfers', JSON.stringify(transfers));
+    render();
+    if(document.getElementById('ownerPanel').style.display=='block') renderOwner();
+    isSyncing = false;
+  }catch(e){ isSyncing=false; }
 }
-if(firebaseReady){
-  db.ref('mobibattle').on('value', (snap)=>{
-    let val = snap.val();
-    if(val){ pullFromFirebase(val); }
-    else { pushToFirebase(); }
-  });
+// Har 5 second me dost ka data check karo
+setInterval(pullFromCloud, 5000);
+function copyRoomCode(){
+  let el = document.getElementById('roomCodeInput');
+  el.select(); document.execCommand('copy');
+  alert('Code Copy Ho Gaya! Dost ko WhatsApp pe bhejo: ' + SYNC_ID);
 }
+function joinRoomCode(){
+  let code = document.getElementById('joinCodeInput').value.trim();
+  if(!code) return alert('Code likho!');
+  SYNC_ID = code;
+  localStorage.setItem('mobi_sync_id', SYNC_ID);
+  alert('Room Join Ho Gaya! Ab sab ka data ek hai.');
+  pullFromCloud();
+}
+function pushToFirebase(){ pushToCloud(); }
 </script>
 
 <script>
@@ -348,9 +358,8 @@ let passes=JSON.parse(localStorage.getItem('mobi_pass')||'{}');
 let transfers=JSON.parse(localStorage.getItem('mobi_transfers')||'[]');
 let noticeText=localStorage.getItem('mobi_notice')||'Room ID admin khud dega - Improve Skills • Fair Play • Koi hack nahi • Aaj raat 8 PM Mega Match hai!';
 if(matches.length==0){ matches=[{id:1,title:'SOLO - Evening Blast',cat:'SOLO',time:'Aaj 8:00 PM',entry:50,prize:500,perKill:10,map:'Bermuda',img:'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800',roomId:'',roomPass:''},{id:2,title:'DUO - Night Hunters',cat:'DUO',time:'Aaj 10:00 PM',entry:100,prize:1200,perKill:15,map:'Purgatory',img:'https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=800',roomId:'',roomPass:''},{id:3,title:'SQUAD - Champions Cup',cat:'SQUAD',time:'Kal 7:00 PM',entry:200,prize:5000,perKill:20,map:'Bermuda',img:'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800',roomId:'',roomPass:''},{id:4,title:'LONE WOLF - 1v1 King',cat:'LONE WOLF',time:'Aaj 9:00 PM',entry:30,prize:300,perKill:10,map:'Craftland',img:'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=800',roomId:'',roomPass:''}]; saveAll(); }
-// ORIGINAL saveAll + FIREBASE PUSH - Setting same, sirf sync add kiya
-function saveAll(){ localStorage.setItem('mobi_users',JSON.stringify(users)); localStorage.setItem('mobi_matches',JSON.stringify(matches)); localStorage.setItem('mobi_deposits',JSON.stringify(deposits)); localStorage.setItem('mobi_withdraws',JSON.stringify(withdraws)); localStorage.setItem('mobi_bookings',JSON.stringify(bookings)); localStorage.setItem('mobi_pass',JSON.stringify(passes)); localStorage.setItem('mobi_transfers',JSON.stringify(transfers)); if(currentUser) localStorage.setItem('mobi_current',JSON.stringify(currentUser)); if(typeof pushToFirebase==='function') pushToFirebase(); }
-function getUser(){ if(!currentUser) return null; return users.find(x=>x.phone==currentUser.phone) || currentUser; }
+function saveAll(){ localStorage.setItem('mobi_users',JSON.stringify(users)); localStorage.setItem('mobi_matches',JSON.stringify(matches)); localStorage.setItem('mobi_deposits',JSON.stringify(deposits)); localStorage.setItem('mobi_withdraws',JSON.stringify(withdraws)); localStorage.setItem('mobi_bookings',JSON.stringify(bookings)); localStorage.setItem('mobi_pass',JSON.stringify(passes)); localStorage.setItem('mobi_transfers',JSON.stringify(transfers)); if(currentUser) localStorage.setItem('mobi_current',JSON.stringify(currentUser)); if(typeof pushToCloud==='function') pushToCloud(); }
+function getUser(){ if(!currentUser) return null; let fresh = users.find(x=>x.phone==currentUser.phone); return fresh || currentUser; }
 function getPlayerStats(phone){ let b=bookings.filter(x=>x.phone==phone); return {totalGames:b.length,totalSpent:b.reduce((s,x)=>s+x.entry,0)}; }
 function showPage(id,btn){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.getElementById(id).classList.add('active'); if(btn){document.querySelectorAll('.navBtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');} window.scrollTo(0,0); render(); }
 function setFilter(f,btn){currentFilter=f;document.querySelectorAll('.fBtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');render();}
@@ -365,8 +374,8 @@ function openWithdraw(){ document.getElementById('withdrawForm').style.display='
 function convertCoins(){ let u=getUser(); if(!u) return alert('Pehle Login karo!'); alert('Tumhare paas '+(u.coins||0)+' Coins hain.'); }
 function sendCoins(){ let u=getUser(); if(!u) return alert('Pehle Login karo!'); let ffUid=prompt('Dost ki Free Fire UID likho:'); if(!ffUid) return; let amt=parseInt(prompt('Kitne Coins bhejne hain?')); if(!amt||amt<=0) return alert('Sahi amount likho!'); if((u.coins||0)<amt) return alert('Coins kam hain!'); let friend=users.find(x=>(x.ffUid||x.uid)==ffUid); if(!friend) return alert('Ye FF UID wala player nahi mila!'); if(friend.phone==u.phone) return alert('Khud ko nahi bhej sakte!'); u.coins-=amt; friend.coins=(friend.coins||0)+amt; if(currentUser&&currentUser.phone==u.phone) currentUser=u; transfers.push({id:Date.now(),from:u.name,fromPhone:u.phone,to:friend.name,toPhone:friend.phone,amount:amt,date:new Date().toLocaleDateString()}); saveAll(); render(); alert('✅ '+amt+' Coins bhej diye!'); }
 function showHistory(){ document.getElementById('historyBox').style.display='block'; }
-function doSignup(){ let name=document.getElementById('pName').value.trim(); let phone=document.getElementById('pPhone').value.trim(); let email=document.getElementById('pEmail').value.trim().toLowerCase(); let ffUid=document.getElementById('pFFUid').value.trim(); let pass=document.getElementById('pPass').value.trim(); if(!name||!phone||!email||!ffUid||!pass) return alert('Sab kuch likho!'); if(pass.length<6) return alert('Password 6 se bara rakho!'); if(users.find(u=>u.email==email)) return alert('Ye Email pehle se hai!'); if(users.find(u=>u.phone==phone)) return alert('Ye Phone pehle se hai!'); if(users.find(u=>(u.ffUid||u.uid)==ffUid)) return alert('Ye FF UID pehle se hai!'); currentUser={uid:ffUid,id:ffUid,ffUid:ffUid,name:name,phone:phone,email:email,coins:0,totalGames:0,createdAt:new Date().toLocaleString()}; users.push(currentUser); passes[email]=pass; saveAll(); render(); alert('Account Ban Gaya! 🎉'); }
-function doLogin(){ let email=document.getElementById('pEmail').value.trim().toLowerCase(); let pass=document.getElementById('pPass').value.trim(); if(!email||!pass) return alert('Email aur Password likho!'); let u=users.find(x=>x.email==email); if(!u) return alert('Account nahi mila!'); if(passes[email]!==pass) return alert('Password Galat hai!'); currentUser=u; saveAll(); render(); alert('Login Ho Gaya! Welcome '+u.name+' 🎉'); }
+function doSignup(){ let name=document.getElementById('pName').value.trim(); let phone=document.getElementById('pPhone').value.trim(); let email=document.getElementById('pEmail').value.trim().toLowerCase(); let ffUid=document.getElementById('pFFUid').value.trim(); let pass=document.getElementById('pPass').value.trim(); if(!name||!phone||!email||!ffUid||!pass) return alert('Sab kuch likho!'); if(pass.length<6) return alert('Password 6 se bara rakho!'); if(users.find(u=>u.email==email)) return alert('Ye Email pehle se hai!'); if(users.find(u=>u.phone==phone)) return alert('Ye Phone pehle se hai!'); if(users.find(u=>(u.ffUid||u.uid)==ffUid)) return alert('Ye FF UID pehle se hai!'); let newUser={uid:ffUid,id:ffUid,ffUid:ffUid,name:name,phone:phone,email:email,coins:0,totalGames:0,createdAt:new Date().toLocaleString()}; users.push(newUser); passes[email]=pass; currentUser=newUser; localStorage.setItem('mobi_current',JSON.stringify(currentUser)); saveAll(); render(); showPage('page-home'); alert('Account Ban Gaya! 🎉'); }
+function doLogin(){ let email=document.getElementById('pEmail').value.trim().toLowerCase(); let pass=document.getElementById('pPass').value.trim(); if(!email||!pass) return alert('Email aur Password likho!'); let u=users.find(x=>x.email==email); if(!u) return alert('Account nahi mila! Pehle Signup karo.'); if(passes[email]!==pass) return alert('Password Galat hai!'); currentUser=u; localStorage.setItem('mobi_current',JSON.stringify(currentUser)); saveAll(); render(); showPage('page-home'); alert('Login Ho Gaya! Welcome '+u.name+' 🎉'); }
 function doLogout(){ currentUser=null; localStorage.removeItem('mobi_current'); render(); alert('Logout Ho Gaya!'); }
 function requestDeposit(){ let u=getUser(); if(!u) return alert('Pehle Login karo!'); let amt=parseInt(document.getElementById('addAmount').value); let trx=document.getElementById('addTrx').value.trim(); if(!amt||!trx) return alert('Amount aur Trx ID likho!'); deposits.push({id:Date.now(),uid:u.ffUid||u.uid||'',phone:u.phone,name:u.name,amount:amt,trx:trx,status:'PENDING',date:new Date().toLocaleDateString()}); saveAll(); render(); alert('Deposit Request Bhej Di!'); }
 function requestWithdraw(){ let u=getUser(); if(!u) return alert('Pehle Login karo!'); let amt=parseInt(document.getElementById('wdAmount').value); let num=document.getElementById('wdNumber').value.trim(); let method=document.getElementById('wdMethod').value; if(!amt||!num) return alert('Amount aur Number likho!'); if(amt<50) return alert('Minimum 50 Coins!'); if((u.coins||0)<amt) return alert('Coins kam hain!'); withdraws.push({id:Date.now(),uid:u.ffUid||u.uid||'',phone:u.phone,name:u.name,amount:amt,number:num,method:method,status:'PENDING',date:new Date().toLocaleDateString()}); saveAll(); render(); alert('Withdraw Request Bhej Di!'); }
@@ -412,6 +421,7 @@ let sorted=[...users].sort((a,b)=>(b.coins||0)-(a.coins||0));
 let wHtml=''; sorted.slice(0,3).forEach((u2,i)=>{ let s=getPlayerStats(u2.phone); wHtml+='<div class="leader"><span>'+(i+1)+' 🏆 '+u2.name+'<br><small>FF UID: '+(u2.ffUid||u2.uid)+' | '+s.totalGames+' Games</small></span><b>'+(u2.coins||0)+' Coins</b></div>'; }); document.getElementById('winnerList').innerHTML=wHtml||'Koi Player nahi';
 let podiumHtml=''; if(sorted.length>=1){ let top3=[sorted[1],sorted[0],sorted[2]]; podiumHtml+='<div class="podium">'; top3.forEach((p,idx)=>{ if(!p){ podiumHtml+='<div class="podiumItem"><div style="height:100px"></div></div>'; return; } let pos=idx==1?1:(idx==0?2:3); let cls=pos==1?'first':(pos==2?'second':'third'); let s=getPlayerStats(p.phone); podiumHtml+='<div class="podiumItem '+cls+'"><div class="podiumAvatar">'+getInitials(p.name)+'</div><div class="rankBadge">'+pos+'</div><div class="podiumName">'+p.name+'</div><div class="podiumCoins">'+(p.coins||0).toLocaleString()+' Coins</div><div class="podiumGames">'+s.totalGames+' Games</div><div class="podiumBar">'+(pos==1?'⭐':'🏆')+'</div></div>'; }); podiumHtml+='</div>'; } else { podiumHtml+='<div class="box" style="text-align:center">Koi Player nahi</div>'; } document.getElementById('podiumArea').innerHTML=podiumHtml;
 let lf=''; sorted.forEach((u2,i)=>{ if(i<3) return; let s=getPlayerStats(u2.phone); lf+='<div class="leaderRow"><div class="rank">'+(i+1)+'</div><div class="leaderAvatar">'+getInitials(u2.name)+'</div><div class="leaderInfo"><b>'+u2.name+'</b><br><small>FF UID: '+(u2.ffUid||u2.uid)+' • '+s.totalGames+' Games</small></div><div class="leaderCoins">'+(u2.coins||0).toLocaleString()+'<br>Coins</div></div>'; }); document.getElementById('leaderFull').innerHTML=lf||'<div style="text-align:center;color:#888;padding:20px">Top 3 ke baad koi player nahi</div>';
+if(document.getElementById('roomCodeInput')) document.getElementById('roomCodeInput').value = SYNC_ID;
 }
 function searchPlayer(){ let q=document.getElementById('searchUid').value.trim().toLowerCase(); if(!q) return alert('FF UID / Phone / Naam likho!'); let found=users.filter(u=> (u.ffUid||u.uid||'').toLowerCase().includes(q) || (u.phone||'').includes(q) || (u.name||'').toLowerCase().includes(q)); if(found.length==0) return document.getElementById('searchResult').innerHTML='<p style="color:#ff3333">❌ Koi Player nahi mila!</p>'; let html=''; found.forEach(u=>{ let s=getPlayerStats(u.phone); html+='<div class="box" style="border:2px solid #00ff88"><h3>👤 '+u.name+'</h3><p style="text-align:left">🎮 FF UID: <b style="color:#00ff88;font-size:16px">'+(u.ffUid||u.uid||'')+'</b><br>📱 Phone: '+u.phone+'<br>💰 Coins: <b>'+(u.coins||0)+' Coins</b></p><button class="btn green" style="width:auto;padding:8px 14px" onclick="addCoinsToUser(\''+u.phone+'\')">➕ Coins Do</button> <button class="btn red" style="width:auto;padding:8px 14px" onclick="removeCoinsFromUser(\''+u.phone+'\')">➖ Coins Kato</button></div>'; }); document.getElementById('searchResult').innerHTML=html; }
 function addCoinsToUser(phone){ let amt=parseInt(prompt('Kitne Coins dene hain?')); if(!amt) return; let u=users.find(x=>x.phone==phone); u.coins=(u.coins||0)+amt; if(currentUser&&currentUser.phone==phone) currentUser=u; saveAll(); renderOwner(); render(); searchPlayer(); }
@@ -424,10 +434,12 @@ function rejectWithdraw(id){ let w=withdraws.find(x=>x.id==id); if(w){w.status='
 function saveRoom(id){ let m=matches.find(x=>x.id==id); if(m){m.roomId=document.getElementById('roomId_'+id).value; m.roomPass=document.getElementById('roomPass_'+id).value; saveAll(); renderOwner(); render(); alert('Room Save!');} }
 function declareWinner(id){ let m=matches.find(x=>x.id==id); let q=document.getElementById('win_'+id).value.trim(); let u=users.find(x=>(x.ffUid||x.uid)==q||x.phone==q||x.name==q); if(!u) return alert('User nahi mila!'); u.coins=(u.coins||0)+m.prize; if(currentUser&&currentUser.phone==u.phone) currentUser=u; saveAll(); renderOwner(); render(); alert('🏆 '+u.name+' ko '+m.prize+' Coins mil gaye!'); }
 function deleteMatch(id){ if(confirm('Delete?')){ matches=matches.filter(x=>x.id!=id); saveAll(); renderOwner(); render(); } }
-function resetAll(){ if(confirm('SAB DELETE?')){ localStorage.clear(); if(firebaseReady && db) db.ref('mobibattle').remove(); location.reload(); } }
+function resetAll(){ if(confirm('SAB DELETE?')){ localStorage.clear(); location.reload(); } }
 function openWhatsApp(){document.getElementById('waPopup').style.display='block';}
 function goWhatsApp(){window.open('https://wa.me/'+SUPPORT_NUMBER+'?text='+encodeURIComponent(document.getElementById('waText').value),'_blank');}
+setInterval(()=>{ if(document.getElementById('ownerPanel').style.display=='block'){ renderOwner(); render(); } },5000);
 render();
+pullFromCloud();
 </script>
 </body>
 </html>
